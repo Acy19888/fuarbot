@@ -74,6 +74,43 @@ async function sendEmail(to, contactName, messeName, salesPerson, smtp) {
 
 const LANG_LABELS = { de: "Deutsch", tr: "Türkçe", en: "English", es: "Español", fr: "Français", it: "Italiano" };
 
+// WhatsApp message templates per language
+function getWhatsAppMessage(lang, contactName, messeName, salesPerson, catalogUrl) {
+  const msgs = {
+    de: `Sehr geehrte/r ${contactName},\n\nvielen Dank für Ihren Besuch an unserem Stand auf der ${messeName}. Es war uns eine Freude, Sie kennenzulernen.\n\nHier finden Sie unseren Katalog:\n${catalogUrl}\n\nBei Fragen stehe ich Ihnen gerne zur Verfügung.\n\nMit freundlichen Grüßen,\n${salesPerson}`,
+    tr: `Sayın ${contactName},\n\n${messeName} fuarında standımızı ziyaret ettiğiniz için çok teşekkür ederiz. Sizinle tanışmak bizim için büyük bir memnuniyet oldu.\n\nKataloğumuzu buradan inceleyebilirsiniz:\n${catalogUrl}\n\nHerhangi bir sorunuz olursa lütfen benimle iletişime geçin.\n\nSaygılarımla,\n${salesPerson}`,
+    en: `Dear ${contactName},\n\nThank you for visiting our booth at ${messeName}. It was a great pleasure meeting you.\n\nPlease find our catalog here:\n${catalogUrl}\n\nDon't hesitate to reach out if you have any questions.\n\nBest regards,\n${salesPerson}`,
+    es: `Estimado/a ${contactName},\n\nGracias por visitar nuestro stand en ${messeName}. Fue un placer conocerle.\n\nAquí puede ver nuestro catálogo:\n${catalogUrl}\n\nNo dude en contactarme si tiene alguna pregunta.\n\nAtentamente,\n${salesPerson}`,
+    fr: `Cher/Chère ${contactName},\n\nMerci pour votre visite sur notre stand au ${messeName}. Ce fut un plaisir de vous rencontrer.\n\nVoici notre catalogue:\n${catalogUrl}\n\nN'hésitez pas à me contacter.\n\nCordialement,\n${salesPerson}`,
+    it: `Gentile ${contactName},\n\nGrazie per aver visitato il nostro stand al ${messeName}. È stato un piacere conoscerLa.\n\nEcco il nostro catalogo:\n${catalogUrl}\n\nPer qualsiasi domanda, non esiti a contattarmi.\n\nCordiali saluti,\n${salesPerson}`,
+  };
+  return msgs[lang] || msgs.en;
+}
+
+function detectContactLang(email, name) {
+  const domain = (email || "").toLowerCase().split("@")[1] || "";
+  const n = (name || "").toLowerCase();
+  const trDomains = [".tr", ".com.tr"];
+  const trChars = /[çğıöşüÇĞİÖŞÜ]/;
+  if (trDomains.some((d) => domain.endsWith(d)) || trChars.test(name || "")) return "tr";
+  const deDomains = [".de", ".at", ".ch"];
+  if (deDomains.some((d) => domain.endsWith(d))) return "de";
+  if (domain.endsWith(".es") || domain.endsWith(".mx")) return "es";
+  if (domain.endsWith(".fr") || domain.endsWith(".be")) return "fr";
+  if (domain.endsWith(".it")) return "it";
+  return "en";
+}
+
+function openWhatsApp(phone, message) {
+  // Clean phone number: remove spaces, dashes, brackets
+  let clean = (phone || "").replace(/[\s\-\(\)]/g, "");
+  // Ensure it starts with country code
+  if (clean.startsWith("0")) clean = "+49" + clean.substring(1); // default Germany
+  if (!clean.startsWith("+")) clean = "+" + clean;
+  const encoded = encodeURIComponent(message);
+  window.open(`https://wa.me/${clean.replace("+", "")}?text=${encoded}`, "_blank");
+}
+
 function demoContact() {
   const d = [
     { name: "Dr. Stefan Müller", company: "Siemens AG", position: "Head of Digital Transformation", email: "s.mueller@siemens.com", phone: "+49 89 636 00", mobile: "", website: "siemens.com", address: "München", linkedin: "", notes: "" },
@@ -109,6 +146,7 @@ function Ic({ name, size = 20, color = T.tx }) {
     linkedin: <svg {...p}><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>,
     db: <svg {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>,
     wifiOff: <svg {...p}><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><circle cx="12" cy="20" r="1" fill={color}/></svg>,
+    whatsapp: <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>,
   };
   return icons[name] || null;
 }
@@ -333,6 +371,30 @@ export default function App() {
     else if (!editingContact) { notify(t("contactSaved")); }
 
     setCurrent(null); setCapturedImg(null); setEditingContact(null); setShowDupeWarning(null); setView("home");
+  };
+
+  // ---- SAVE + WHATSAPP ----
+  const saveContactWhatsApp = async () => {
+    if (!current) return;
+    const phone = current.phone || current.mobile;
+    if (!phone) { notify(t("noPhoneNumber"), "warn"); return; }
+
+    const contactData = { ...current, whatsappSent: true, savedAt: new Date().toISOString() };
+
+    if (editingContact) {
+      await updateContactInFirebase(editingContact.id, contactData);
+    } else {
+      await saveContactToFirebase(contactData);
+    }
+
+    // Detect language and create message
+    const contactLang = detectContactLang(current.email, current.name);
+    const catalog = smtp.catalogUrl || "https://windoform.de";
+    const message = getWhatsAppMessage(contactLang, current.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, catalog);
+
+    openWhatsApp(phone, message);
+    notify(t("whatsappOpened"));
+    setCurrent(null); setCapturedImg(null); setEditingContact(null); setView("home");
   };
 
   // ---- EDIT ----
@@ -699,13 +761,17 @@ export default function App() {
           <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", maxWidth: 480, width: "100%", padding: "16px 20px 32px", background: `linear-gradient(transparent, ${T.bg} 25%)` }}>
             {editingContact ? (
               <>
-                <button onClick={() => saveContact(false)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), boxShadow: `0 6px 24px rgba(43,85,151,.35)`, marginBottom: 10 }}><Ic name="check" size={18} color={T.wh} /> Änderungen speichern</button>
-                <button onClick={() => saveContact(true)} style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}` }}><Ic name="mail" size={14} color={T.txM} /> Speichern + Email senden</button>
+                <button onClick={() => saveContact(false)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), boxShadow: `0 6px 24px rgba(43,85,151,.35)`, marginBottom: 8 }}><Ic name="check" size={18} color={T.wh} /> {t("saveChanges")}</button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => saveContact(true)} style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}`, flex: 1, padding: 12, fontSize: 13 }}><Ic name="mail" size={14} color={T.txM} /> Email</button>
+                  <button onClick={() => saveContactWhatsApp()} style={{ ...S.btn(T.sf, "#25D366"), border: "1px solid #25D36633", flex: 1, padding: 12, fontSize: 13 }}><Ic name="whatsapp" size={14} color="#25D366" /> WhatsApp</button>
+                </div>
               </>
             ) : (
               <>
-                <button onClick={() => saveContact(true)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), boxShadow: `0 6px 24px rgba(43,85,151,.35)`, marginBottom: 10 }}><Ic name="check" size={18} color={T.wh} /> Speichern + Email senden</button>
-                <button onClick={() => saveContact(false)} style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}` }}>{t("saveOnly")}</button>
+                <button onClick={() => saveContact(true)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), boxShadow: `0 6px 24px rgba(43,85,151,.35)`, marginBottom: 8 }}><Ic name="mail" size={18} color={T.wh} /> {t("saveAndEmail")}</button>
+                <button onClick={() => saveContactWhatsApp()} style={{ ...S.btn("#25D366", T.wh), marginBottom: 8 }}><Ic name="whatsapp" size={18} color={T.wh} /> {t("saveAndWhatsapp")}</button>
+                <button onClick={() => saveContact(false)} style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}`, padding: 12, fontSize: 13 }}>{t("saveOnly")}</button>
               </>
             )}
           </div>
@@ -739,7 +805,7 @@ export default function App() {
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 10, borderTop: `1px solid ${T.bd}` }}>
-                <div style={{ display: "flex", gap: 6 }}>{c.emailSent && <span style={{ fontSize: 10, fontWeight: 600, color: T.ok, background: T.okG, padding: "3px 8px", borderRadius: 6 }}>✓ Email</span>}</div>
+                <div style={{ display: "flex", gap: 6 }}>{c.emailSent && <span style={{ fontSize: 10, fontWeight: 600, color: T.ok, background: T.okG, padding: "3px 8px", borderRadius: 6 }}>✓ Email</span>}{c.whatsappSent && <span style={{ fontSize: 10, fontWeight: 600, color: "#25D366", background: "rgba(37,211,102,.12)", padding: "3px 8px", borderRadius: 6 }}>✓ WhatsApp</span>}</div>
                 <span style={{ fontSize: 11, color: T.txD }}>{new Date(c.scannedAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}</span>
               </div>
             </div>

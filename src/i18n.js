@@ -131,6 +131,12 @@ const translations = {
     english: "English",
 
     // Nav
+    saveAndWhatsapp: "Speichern + WhatsApp",
+    noPhoneNumber: "Keine Telefonnummer vorhanden",
+    whatsappOpened: "WhatsApp geöffnet!",
+    saveAndWhatsapp: "Save + WhatsApp",
+    noPhoneNumber: "No phone number available",
+    whatsappOpened: "WhatsApp opened!",
     navScan: "Scan",
     navContacts: "Kontakte",
     navSetup: "Setup",
@@ -255,6 +261,9 @@ const translations = {
     turkish: "Türkçe",
     english: "English",
 
+    saveAndWhatsapp: "Kaydet + WhatsApp",
+    noPhoneNumber: "Telefon numarası yok",
+    whatsappOpened: "WhatsApp açıldı!",
     navScan: "Tara",
     navContacts: "Kişiler",
     navSetup: "Ayarlar",
@@ -379,6 +388,12 @@ const translations = {
     turkish: "Türkçe",
     english: "English",
 
+    saveAndWhatsapp: "Speichern + WhatsApp",
+    noPhoneNumber: "Keine Telefonnummer vorhanden",
+    whatsappOpened: "WhatsApp geöffnet!",
+    saveAndWhatsapp: "Save + WhatsApp",
+    noPhoneNumber: "No phone number available",
+    whatsappOpened: "WhatsApp opened!",
     navScan: "Scan",
     navContacts: "Contacts",
     navSetup: "Setup",
