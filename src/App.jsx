@@ -15,10 +15,10 @@ const MESSEN = [
 ];
 
 const T = {
-  bg: "#0B0E14", sf: "#141820", sf2: "#1C2030", acc: "#E8553D",
-  accH: "#FF6B4F", accG: "rgba(232,85,61,0.12)", accS: "#F4A261",
+  bg: "#0A1628", sf: "#0F2035", sf2: "#142A42", acc: "#2B5597",
+  accH: "#3A6BB5", accG: "rgba(43,85,151,0.15)", accS: "#4A8FD4",
   ok: "#34D399", okG: "rgba(52,211,153,0.12)", tx: "#ECE9E1",
-  txM: "#858896", txD: "#4E5162", bd: "#252938", wh: "#FFF",
+  txM: "#A7A9AC", txD: "#6d6e71", bd: "#1E3A5A", wh: "#FFF",
   warn: "#FBBF24",
 };
 
@@ -27,7 +27,7 @@ const S = {
   input: {
     width: "100%", padding: "12px 16px", background: T.bg, border: `1px solid ${T.bd}`,
     borderRadius: 12, color: T.tx, fontSize: 15, outline: "none",
-    fontFamily: "'Outfit',sans-serif", transition: "border-color .2s",
+    fontFamily: "'Montserrat',sans-serif", transition: "border-color .2s",
   },
   label: { fontSize: 11, color: T.txM, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6, display: "block" },
   btn: (bg, c) => ({
@@ -373,9 +373,9 @@ export default function App() {
   // RENDER
   // ============================================================
   return (
-    <div style={{ minHeight: "100vh", background: T.bg, fontFamily: "'Outfit','Segoe UI',sans-serif", color: T.tx, maxWidth: 480, margin: "0 auto", position: "relative" }}>
+    <div style={{ minHeight: "100vh", background: T.bg, fontFamily: "'Montserrat','Segoe UI',sans-serif", color: T.tx, maxWidth: 480, margin: "0 auto", position: "relative" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
         @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.1);opacity:.6}}
         @keyframes slideUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -383,7 +383,7 @@ export default function App() {
         @keyframes burst{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
         @keyframes scanLine{0%{top:10%}100%{top:85%}}
         *{box-sizing:border-box;margin:0;padding:0}
-        input,textarea,select{font-family:'Outfit',sans-serif}
+        input,textarea,select{font-family:'Montserrat',sans-serif}
         ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:${T.bd};border-radius:4px}
         video::-webkit-media-controls{display:none!important}
       `}</style>
@@ -414,7 +414,7 @@ export default function App() {
               <p style={{ fontSize: 12, color: T.txM }}>{showDupeWarning.existing.company}</p>
               <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>{showDupeWarning.existing.email}</p>
             </div>
-            <button onClick={() => saveContact(showDupeWarning.withEmail, true)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#C94430)`, T.wh), marginBottom: 10, fontSize: 13, padding: 14 }}>
+            <button onClick={() => saveContact(showDupeWarning.withEmail, true)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), marginBottom: 10, fontSize: 13, padding: 14 }}>
               Trotzdem speichern
             </button>
             <button onClick={() => { startEditing(showDupeWarning.existing); setShowDupeWarning(null); }} style={{ ...S.btn(T.sf2, T.accS), border: `1px solid ${T.bd}`, marginBottom: 10, fontSize: 13, padding: 14 }}>
@@ -442,11 +442,13 @@ export default function App() {
         <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "40px 24px", animation: "fadeIn .4s" }}>
           {/* Logo */}
           <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: `linear-gradient(135deg,${T.acc},${T.accS})`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", boxShadow: `0 8px 32px rgba(232,85,61,.3)` }}>
-              <Ic name="zap" size={28} color={T.wh} />
+            <div style={{ width: 64, height: 64, borderRadius: 16, background: T.acc, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", boxShadow: `0 8px 32px rgba(43,85,151,.4)` }}>
+              <svg width="36" height="36" viewBox="0 0 100 80" fill="none">
+                <path d="M10 10 L25 70 L38 30 L50 70 L62 30 L75 70 L90 10" stroke="#fff" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              </svg>
             </div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-.03em" }}>FuarBot</h1>
-            <p style={{ fontSize: 14, color: T.txM, marginTop: 6 }}>Windoform Messe-Scanner</p>
+            <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-.02em" }}>WINDOFORM</h1>
+            <p style={{ fontSize: 13, color: T.txM, marginTop: 4, letterSpacing: ".1em", fontWeight: 500 }}>FUAR ASISTANI</p>
           </div>
 
           {/* Form */}
@@ -476,7 +478,7 @@ export default function App() {
 
             {authError && <p style={{ color: T.acc, fontSize: 13, marginBottom: 14, textAlign: "center" }}>{authError}</p>}
 
-            <button onClick={authView === "login" ? handleLogin : handleRegister} disabled={authLoading} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#C94430)`, T.wh), opacity: authLoading ? .6 : 1, boxShadow: `0 6px 24px rgba(232,85,61,.3)` }}>
+            <button onClick={authView === "login" ? handleLogin : handleRegister} disabled={authLoading} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), opacity: authLoading ? .6 : 1, boxShadow: `0 6px 24px rgba(43,85,151,.3)` }}>
               <Ic name="lock" size={18} color={T.wh} />
               {authLoading ? "..." : authView === "login" ? "Anmelden" : "Registrieren"}
             </button>
@@ -539,10 +541,13 @@ export default function App() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg,${T.acc},${T.accS})`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 16px rgba(232,85,61,.3)` }}>
-                  <Ic name="zap" size={18} color={T.wh} />
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: T.acc, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 16px rgba(43,85,151,.3)` }}>
+                  <svg width="20" height="20" viewBox="0 0 100 80" fill="none"><path d="M10 10 L25 70 L38 30 L50 70 L62 30 L75 70 L90 10" stroke="#fff" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
                 </div>
-                <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.03em" }}>FuarBot</h1>
+                <div>
+                  <h1 style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-.01em", lineHeight: 1 }}>WINDOFORM</h1>
+                  <p style={{ fontSize: 9, color: T.txM, letterSpacing: ".1em", fontWeight: 600 }}>FUAR ASISTANI</p>
+                </div>
               </div>
               <p style={{ fontSize: 13, color: T.accS, fontWeight: 500 }}>{selectedMesse.name} – {selectedMesse.city}</p>
               <p style={{ fontSize: 12, color: T.txD, marginTop: 2 }}>{user.displayName || user.email}</p>
@@ -566,7 +571,7 @@ export default function App() {
             ))}
           </div>
 
-          <button onClick={startCamera} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#C94430)`, T.wh), marginBottom: 10, boxShadow: `0 8px 32px rgba(232,85,61,.4)`, padding: "20px", fontSize: 17 }}>
+          <button onClick={startCamera} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), marginBottom: 10, boxShadow: `0 8px 32px rgba(43,85,151,.4)`, padding: "20px", fontSize: 17 }}>
             <Ic name="camera" size={24} color={T.wh} /> Visitenkarte scannen
           </button>
           <button onClick={() => fileRef.current?.click()} style={{ ...S.btn("transparent", T.txM), border: `1px dashed ${T.bd}`, marginBottom: 28, padding: 14, fontSize: 14, fontWeight: 500 }}>
@@ -614,7 +619,7 @@ export default function App() {
                 {cameraError && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.9)", padding: 32 }}><div style={{ textAlign: "center" }}><Ic name="wifiOff" size={40} color={T.acc} /><p style={{ color: T.tx, fontSize: 14, marginTop: 16, lineHeight: 1.6 }}>{cameraError}</p><button onClick={() => fileRef.current?.click()} style={{ marginTop: 20, padding: "12px 28px", background: T.acc, border: "none", borderRadius: 10, color: T.wh, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Foto hochladen</button></div></div>}
                 {cameraActive && !cameraError && (
                   <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <div style={{ width: "88%", height: "52%", position: "relative", border: `2px solid rgba(232,85,61,.4)`, borderRadius: 16 }}>
+                    <div style={{ width: "88%", height: "52%", position: "relative", border: `2px solid rgba(43,85,151,.4)`, borderRadius: 16 }}>
                       <div style={{ position: "absolute", left: "5%", right: "5%", height: 2, background: `linear-gradient(90deg, transparent, ${T.acc}, transparent)`, animation: "scanLine 2s ease-in-out infinite alternate", boxShadow: `0 0 12px ${T.acc}` }} />
                       {[["top","left"],["top","right"],["bottom","left"],["bottom","right"]].map(([v,h]) => <div key={v+h} style={{ position: "absolute", [v]: -2, [h]: -2, width: 24, height: 24, borderColor: T.acc, borderStyle: "solid", borderWidth: 0, [`border${v==="top"?"Top":"Bottom"}Width`]: 3, [`border${h==="left"?"Left":"Right"}Width`]: 3, borderRadius: 8 }} />)}
                       <p style={{ position: "absolute", bottom: -40, width: "100%", textAlign: "center", fontSize: 13, color: "rgba(255,255,255,.6)", fontWeight: 500 }}>Visitenkarte im Rahmen positionieren</p>
@@ -628,7 +633,7 @@ export default function App() {
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 20px 44px", background: "linear-gradient(transparent, rgba(0,0,0,.95) 30%)" }}>
             <div style={{ display: "flex", justifyContent: "center", gap: 24, alignItems: "center" }}>
               <button onClick={() => { stopCamera(); setView("home"); setCapturedImg(null); }} style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(255,255,255,.1)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ic name="back" size={22} color={T.wh} /></button>
-              {!capturedImg && cameraActive && <button onClick={capturePhoto} style={{ width: 76, height: 76, borderRadius: "50%", background: T.acc, border: `4px solid rgba(232,85,61,.35)`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 28px rgba(232,85,61,.5)` }}><div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,.3)" }} /></button>}
+              {!capturedImg && cameraActive && <button onClick={capturePhoto} style={{ width: 76, height: 76, borderRadius: "50%", background: T.acc, border: `4px solid rgba(43,85,151,.35)`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 28px rgba(43,85,151,.5)` }}><div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,.3)" }} /></button>}
               {capturedImg && !scanning && <button onClick={() => { setCapturedImg(null); startCamera(); }} style={{ width: 76, height: 76, borderRadius: "50%", background: "rgba(255,255,255,.15)", border: `2px solid rgba(255,255,255,.3)`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ic name="refresh" size={28} color={T.wh} /></button>}
               <button onClick={() => fileRef.current?.click()} style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(255,255,255,.1)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ic name="image" size={22} color={T.wh} /></button>
             </div>
@@ -681,12 +686,12 @@ export default function App() {
           <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", maxWidth: 480, width: "100%", padding: "16px 20px 32px", background: `linear-gradient(transparent, ${T.bg} 25%)` }}>
             {editingContact ? (
               <>
-                <button onClick={() => saveContact(false)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#C94430)`, T.wh), boxShadow: `0 6px 24px rgba(232,85,61,.35)`, marginBottom: 10 }}><Ic name="check" size={18} color={T.wh} /> Änderungen speichern</button>
+                <button onClick={() => saveContact(false)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), boxShadow: `0 6px 24px rgba(43,85,151,.35)`, marginBottom: 10 }}><Ic name="check" size={18} color={T.wh} /> Änderungen speichern</button>
                 <button onClick={() => saveContact(true)} style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}` }}><Ic name="mail" size={14} color={T.txM} /> Speichern + Email senden</button>
               </>
             ) : (
               <>
-                <button onClick={() => saveContact(true)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#C94430)`, T.wh), boxShadow: `0 6px 24px rgba(232,85,61,.35)`, marginBottom: 10 }}><Ic name="check" size={18} color={T.wh} /> Speichern + Email senden</button>
+                <button onClick={() => saveContact(true)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), boxShadow: `0 6px 24px rgba(43,85,151,.35)`, marginBottom: 10 }}><Ic name="check" size={18} color={T.wh} /> Speichern + Email senden</button>
                 <button onClick={() => saveContact(false)} style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}` }}>Nur speichern</button>
               </>
             )}
@@ -824,7 +829,7 @@ export default function App() {
                 setSmtpSaved(true);
                 notify("SMTP-Einstellungen gespeichert!");
               } catch (e) { notify("Speichern fehlgeschlagen: " + e.message, "error"); }
-            }} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#C94430)`, T.wh), marginBottom: 10, boxShadow: `0 4px 16px rgba(232,85,61,.25)` }}>
+            }} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), marginBottom: 10, boxShadow: `0 4px 16px rgba(43,85,151,.25)` }}>
               Speichern
             </button>
 

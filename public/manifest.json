@@ -1,11 +1,11 @@
 {
-  "name": "FuarBot",
-  "short_name": "FuarBot",
-  "description": "AI Visitenkarten-Scanner für Messen",
+  "name": "Windoform Fuar Asistanı",
+  "short_name": "Windoform",
+  "description": "AI Visitenkarten-Scanner für Messen – Windoform",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0B0E14",
-  "theme_color": "#E8553D",
+  "background_color": "#0A1628",
+  "theme_color": "#2B5597",
   "orientation": "portrait",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },

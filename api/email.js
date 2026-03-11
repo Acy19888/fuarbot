@@ -154,7 +154,7 @@ export default async function handler(req, res) {
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;font-family:'Segoe UI',Helvetica,Arial,sans-serif;background:#f5f5f5;">
 <div style="max-width:600px;margin:20px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-<div style="background:#1a1a2e;padding:32px 40px;">
+<div style="background:#2B5597;padding:32px 40px;">
 <h1 style="margin:0;color:#fff;font-size:20px;font-weight:600;">${company}</h1>
 </div>
 <div style="padding:40px;">
@@ -162,7 +162,7 @@ export default async function handler(req, res) {
 <p style="font-size:15px;color:#555;line-height:1.7;margin:0 0 16px;">${t.body1}</p>
 <p style="font-size:15px;color:#555;line-height:1.7;margin:0 0 24px;">${t.body2}</p>
 <div style="text-align:center;margin:32px 0;">
-<a href="${catalog}" style="display:inline-block;background:#E8553D;color:#fff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:16px;font-weight:600;box-shadow:0 4px 12px rgba(232,85,61,0.3);">
+<a href="${catalog}" style="display:inline-block;background:#2B5597;color:#fff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:16px;font-weight:600;box-shadow:0 4px 12px rgba(43,85,151,0.3);">
 ${t.cta}
 </a>
 </div>
