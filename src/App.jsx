@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
   saveContactToFirebase, subscribeToContacts, isFirebaseConfigured,
+  updateContactInFirebase, deleteContactFromFirebase,
   loginUser, registerUser, logoutUser, onAuthChange,
   saveUserSettings, getUserSettings,
 } from "./firebase.js";
@@ -154,6 +155,8 @@ export default function App() {
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [demoMode, setDemoMode] = useState(false);
+  const [editingContact, setEditingContact] = useState(null); // for editing existing contacts
+  const [showDupeWarning, setShowDupeWarning] = useState(null);
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -282,18 +285,65 @@ export default function App() {
     setScanning(false); setView("review");
   };
 
+  // ---- DUPLICATE CHECK ----
+  const findDuplicate = (contact) => {
+    if (!contact) return null;
+    const email = (contact.email || "").toLowerCase().trim();
+    const name = (contact.name || "").toLowerCase().trim();
+    return contacts.find((c) => {
+      if (email && c.email && c.email.toLowerCase().trim() === email) return true;
+      if (name && c.name && c.name.toLowerCase().trim() === name && c.company && contact.company && c.company.toLowerCase().trim() === (contact.company || "").toLowerCase().trim()) return true;
+      return false;
+    });
+  };
+
   // ---- SAVE ----
-  const saveContact = async (withEmail = true) => {
+  const saveContact = async (withEmail = true, forceOverwrite = false) => {
     if (!current) return;
+
+    // Duplicate check
+    if (!forceOverwrite && !editingContact) {
+      const dupe = findDuplicate(current);
+      if (dupe) {
+        setShowDupeWarning({ existing: dupe, withEmail });
+        return;
+      }
+    }
+
     const contactData = { ...current, emailSent: false, savedAt: new Date().toISOString() };
-    await saveContactToFirebase(contactData);
+
+    // If editing existing contact, update instead of create
+    if (editingContact) {
+      await updateContactInFirebase(editingContact.id, contactData);
+      notify("Kontakt aktualisiert");
+    } else {
+      await saveContactToFirebase(contactData);
+    }
+
     if (withEmail && current.email) {
       const lang = await sendEmail(current.email, current.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp);
       if (lang) { contactData.emailSent = true; setEmailSent(true); setTimeout(() => setEmailSent(false), 2500); notify(`Email (${LANG_LABELS[lang] || lang}) an ${current.email} gesendet!`); }
       else notify(smtpSaved ? "Email fehlgeschlagen – SMTP prüfen" : "Bitte zuerst Email in Settings einrichten", "error");
     } else if (withEmail && !current.email) { notify("Keine Email-Adresse", "warn"); }
-    else { notify("Kontakt gespeichert"); }
-    setCurrent(null); setCapturedImg(null); setView("home");
+    else if (!editingContact) { notify("Kontakt gespeichert"); }
+
+    setCurrent(null); setCapturedImg(null); setEditingContact(null); setShowDupeWarning(null); setView("home");
+  };
+
+  // ---- EDIT ----
+  const startEditing = (contact) => {
+    setEditingContact(contact);
+    setCurrent({ ...contact });
+    setCapturedImg(null);
+    setView("review");
+  };
+
+  // ---- DELETE ----
+  const deleteContact = async (contact) => {
+    if (!contact?.id) return;
+    await deleteContactFromFirebase(contact.id);
+    notify("Kontakt gelöscht");
+    setCurrent(null); setEditingContact(null); setView("contacts");
   };
 
   const upd = (k, v) => setCurrent((p) => ({ ...p, [k]: v }));
@@ -345,6 +395,37 @@ export default function App() {
 
       {/* Email overlay */}
       {emailSent && <div style={{ position: "fixed", inset: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(11,14,20,.92)", backdropFilter: "blur(16px)" }}><div style={{ textAlign: "center", animation: "burst .5s ease" }}><div style={{ width: 88, height: 88, borderRadius: "50%", background: T.okG, border: `2px solid ${T.ok}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}><Ic name="mail" size={36} color={T.ok} /></div><p style={{ fontSize: 20, fontWeight: 700 }}>Email gesendet!</p></div></div>}
+
+      {/* Duplicate Warning Modal */}
+      {showDupeWarning && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 998, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(11,14,20,.92)", backdropFilter: "blur(12px)", padding: 24 }}>
+          <div style={{ ...S.card, padding: 24, maxWidth: 360, width: "100%", animation: "slideUp .3s ease" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(251,191,36,.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Ic name="users" size={20} color={T.warn} />
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 700 }}>Mögliche Dublette</h3>
+            </div>
+            <p style={{ fontSize: 13, color: T.txM, lineHeight: 1.6, marginBottom: 16 }}>
+              Ein ähnlicher Kontakt existiert bereits:
+            </p>
+            <div style={{ background: T.bg, borderRadius: 10, padding: 14, border: `1px solid ${T.bd}`, marginBottom: 20 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: T.tx }}>{showDupeWarning.existing.name}</p>
+              <p style={{ fontSize: 12, color: T.txM }}>{showDupeWarning.existing.company}</p>
+              <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>{showDupeWarning.existing.email}</p>
+            </div>
+            <button onClick={() => saveContact(showDupeWarning.withEmail, true)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#C94430)`, T.wh), marginBottom: 10, fontSize: 13, padding: 14 }}>
+              Trotzdem speichern
+            </button>
+            <button onClick={() => { startEditing(showDupeWarning.existing); setShowDupeWarning(null); }} style={{ ...S.btn(T.sf2, T.accS), border: `1px solid ${T.bd}`, marginBottom: 10, fontSize: 13, padding: 14 }}>
+              Bestehenden bearbeiten
+            </button>
+            <button onClick={() => { setShowDupeWarning(null); }} style={{ ...S.btn("transparent", T.txM), fontSize: 13, padding: 14 }}>
+              Abbrechen
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ============ LOADING ============ */}
       {user === undefined && (
@@ -559,12 +640,12 @@ export default function App() {
       {view === "review" && current && (
         <div style={{ padding: "20px 20px 150px", animation: "slideUp .35s ease" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-            <button onClick={() => { setCurrent(null); setView("home"); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><Ic name="back" size={22} color={T.txM} /></button>
-            <h2 style={{ fontSize: 20, fontWeight: 700 }}>Kontakt prüfen</h2>
+            <button onClick={() => { setCurrent(null); setEditingContact(null); setView(editingContact ? "contacts" : "home"); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><Ic name="back" size={22} color={T.txM} /></button>
+            <h2 style={{ fontSize: 20, fontWeight: 700 }}>{editingContact ? "Kontakt bearbeiten" : "Kontakt prüfen"}</h2>
           </div>
           {capturedImg && <div style={{ ...S.card, overflow: "hidden", marginBottom: 20, height: 140 }}><img src={capturedImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div>}
           <div style={{ ...S.card, padding: 20, marginBottom: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}><Ic name="zap" size={14} color={T.ok} /><span style={{ fontSize: 11, fontWeight: 700, color: T.ok, textTransform: "uppercase", letterSpacing: ".06em" }}>AI-erkannt</span></div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}><Ic name={editingContact ? "edit" : "zap"} size={14} color={editingContact ? T.accS : T.ok} /><span style={{ fontSize: 11, fontWeight: 700, color: editingContact ? T.accS : T.ok, textTransform: "uppercase", letterSpacing: ".06em" }}>{editingContact ? "Bearbeiten" : "AI-erkannt"}</span></div>
             {[{ k: "name", l: "Name" }, { k: "company", l: "Firma" }, { k: "position", l: "Position" }, { k: "email", l: "Email" }, { k: "phone", l: "Telefon" }, { k: "mobile", l: "Mobil" }, { k: "website", l: "Website" }, { k: "address", l: "Adresse" }, { k: "linkedin", l: "LinkedIn" }].map((f) => (
               <div key={f.k} style={{ marginBottom: 12 }}>
                 <label style={S.label}>{f.l}</label>
@@ -573,20 +654,42 @@ export default function App() {
             ))}
             <div><label style={S.label}>Notizen</label><textarea value={current.notes || ""} onChange={(e) => upd("notes", e.target.value)} placeholder="z.B. Interesse an Produkt X..." rows={3} style={{ ...S.input, resize: "vertical" }} onFocus={(e) => e.target.style.borderColor = T.acc} onBlur={(e) => e.target.style.borderColor = T.bd} /></div>
           </div>
-          <div style={{ ...S.card, padding: 20, marginBottom: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}><Ic name="mail" size={16} color={T.accS} /><span style={{ fontSize: 13, fontWeight: 600 }}>Follow-up Email</span></div>
-            <div style={{ background: T.bg, borderRadius: 10, padding: 16, border: `1px solid ${T.bd}`, fontSize: 13, lineHeight: 1.7, color: T.txM }}>
-              <p><span style={{ color: T.txD }}>An:</span> <span style={{ color: T.tx }}>{current.email || "—"}</span></p>
-              <p><span style={{ color: T.txD }}>Betreff:</span> <span style={{ color: T.tx }}>Vielen Dank – {selectedMesse?.name} {selectedMesse?.city}</span></p>
-              <hr style={{ border: "none", borderTop: `1px solid ${T.bd}`, margin: "12px 0" }} />
-              <p>Sehr geehrte/r {current.name}, vielen Dank für Ihren Besuch...</p>
-              <p style={{ marginTop: 8 }}><span style={{ color: T.acc }}>→ Katalog ansehen</span></p>
-              <p style={{ marginTop: 8 }}>MfG, <span style={{ color: T.tx, fontWeight: 600 }}>{user?.displayName || user?.email}</span></p>
+
+          {/* Email preview – only for new contacts */}
+          {!editingContact && (
+            <div style={{ ...S.card, padding: 20, marginBottom: 24 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}><Ic name="mail" size={16} color={T.accS} /><span style={{ fontSize: 13, fontWeight: 600 }}>Follow-up Email</span></div>
+              <div style={{ background: T.bg, borderRadius: 10, padding: 16, border: `1px solid ${T.bd}`, fontSize: 13, lineHeight: 1.7, color: T.txM }}>
+                <p><span style={{ color: T.txD }}>An:</span> <span style={{ color: T.tx }}>{current.email || "—"}</span></p>
+                <p><span style={{ color: T.txD }}>Betreff:</span> <span style={{ color: T.tx }}>Vielen Dank – {selectedMesse?.name} {selectedMesse?.city}</span></p>
+                <hr style={{ border: "none", borderTop: `1px solid ${T.bd}`, margin: "12px 0" }} />
+                <p>Sehr geehrte/r {current.name}, vielen Dank für Ihren Besuch...</p>
+                <p style={{ marginTop: 8 }}><span style={{ color: T.acc }}>→ Katalog ansehen</span></p>
+                <p style={{ marginTop: 8 }}>MfG, <span style={{ color: T.tx, fontWeight: 600 }}>{user?.displayName || user?.email}</span></p>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Delete button for existing contacts */}
+          {editingContact && (
+            <button onClick={() => { if (confirm("Kontakt wirklich löschen?")) deleteContact(editingContact); }} style={{ ...S.btn("transparent", "#EF4444"), border: "1px solid rgba(239,68,68,.3)", marginBottom: 24, padding: 12, fontSize: 13, fontWeight: 600 }}>
+              Kontakt löschen
+            </button>
+          )}
+
+          {/* Bottom actions */}
           <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", maxWidth: 480, width: "100%", padding: "16px 20px 32px", background: `linear-gradient(transparent, ${T.bg} 25%)` }}>
-            <button onClick={() => saveContact(true)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#C94430)`, T.wh), boxShadow: `0 6px 24px rgba(232,85,61,.35)`, marginBottom: 10 }}><Ic name="check" size={18} color={T.wh} /> Speichern + Email senden</button>
-            <button onClick={() => saveContact(false)} style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}` }}>Nur speichern</button>
+            {editingContact ? (
+              <>
+                <button onClick={() => saveContact(false)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#C94430)`, T.wh), boxShadow: `0 6px 24px rgba(232,85,61,.35)`, marginBottom: 10 }}><Ic name="check" size={18} color={T.wh} /> Änderungen speichern</button>
+                <button onClick={() => saveContact(true)} style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}` }}><Ic name="mail" size={14} color={T.txM} /> Speichern + Email senden</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => saveContact(true)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#C94430)`, T.wh), boxShadow: `0 6px 24px rgba(232,85,61,.35)`, marginBottom: 10 }}><Ic name="check" size={18} color={T.wh} /> Speichern + Email senden</button>
+                <button onClick={() => saveContact(false)} style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}` }}>Nur speichern</button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -600,7 +703,10 @@ export default function App() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, ...S.card, padding: "10px 16px", marginBottom: 20 }}><Ic name="search" size={16} color={T.txD} /><input type="text" placeholder="Suchen..." value={searchQ} onChange={(e) => setSearchQ(e.target.value)} style={{ flex: 1, background: "none", border: "none", color: T.tx, fontSize: 14, outline: "none" }} /></div>
           {filtered.map((c, i) => (
-            <div key={c.id} style={{ ...S.card, padding: 16, marginBottom: 8, animation: `slideUp .3s ease ${i * .03}s both` }}>
+            <div key={c.id} onClick={() => startEditing(c)} style={{ ...S.card, padding: 16, marginBottom: 8, animation: `slideUp .3s ease ${i * .03}s both`, cursor: "pointer", transition: "border-color .2s" }}
+              onMouseOver={(e) => e.currentTarget.style.borderColor = T.acc + "66"}
+              onMouseOut={(e) => e.currentTarget.style.borderColor = T.bd}
+            >
               <div style={{ display: "flex", gap: 12 }}>
                 <div style={{ width: 46, height: 46, borderRadius: 12, flexShrink: 0, background: `linear-gradient(135deg,${T.sf2},${T.bd})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: T.acc }}>{c.name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -609,6 +715,9 @@ export default function App() {
                   <p style={{ fontSize: 12, color: T.txM }}>{c.company}</p>
                   {c.email && <p style={{ fontSize: 11, color: T.txD, marginTop: 6 }}>{c.email}</p>}
                   {c.notes && <p style={{ fontSize: 12, color: T.txM, marginTop: 8, padding: "6px 10px", background: T.bg, borderRadius: 8, fontStyle: "italic" }}>{c.notes}</p>}
+                </div>
+                <div style={{ flexShrink: 0, display: "flex", alignItems: "center" }}>
+                  <Ic name="edit" size={16} color={T.txD} />
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 10, borderTop: `1px solid ${T.bd}` }}>
