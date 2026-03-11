@@ -1,5 +1,9 @@
 {
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/:path*" }
-  ]
+  "framework": "vite",
+  "functions": {
+    "api/scan.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  }
 }
