@@ -145,7 +145,7 @@ export default function App() {
     { label: "IONOS / 1&1", host: "smtp.ionos.de", port: "465" },
     { label: "Strato", host: "smtp.strato.de", port: "465" },
     { label: "Hetzner", host: "mail.your-server.de", port: "465" },
-    { label: "Anderer", host: "", port: "465" },
+    { label: t("other"), host: "", port: "465" },
   ];
 
   // App state
@@ -256,7 +256,7 @@ export default function App() {
       await new Promise((r) => setTimeout(r, 100));
       if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.setAttribute("playsinline", "true"); await videoRef.current.play(); }
     } catch (err) {
-      setCameraError(err.name === "NotAllowedError" ? "Kamera-Zugriff verweigert. Bitte erlaube den Zugriff." : "Keine Kamera gefunden.");
+      setCameraError(err.name === "NotAllowedError" ? t("cameraBlocked") : t("noCamera"));
       setCameraActive(false);
     }
   };
@@ -517,7 +517,7 @@ export default function App() {
               <h1 style={{ fontSize: 22, fontWeight: 800 }}>{user.displayName || user.email}</h1>
             </div>
             <button onClick={handleLogout} style={{ background: T.sf, border: `1px solid ${T.bd}`, borderRadius: 10, padding: "8px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: T.txM, fontSize: 12, fontWeight: 600 }}>
-              <Ic name="logout" size={14} color={T.txM} /> Logout
+              <Ic name="logout" size={14} color={T.txM} /> {t("logout")}
             </button>
           </div>
 
@@ -566,7 +566,7 @@ export default function App() {
               <p style={{ fontSize: 12, color: T.txD, marginTop: 2 }}>{user.displayName || user.email}</p>
             </div>
             <button onClick={() => setSelectedMesse(null)} style={{ background: T.sf, border: `1px solid ${T.bd}`, borderRadius: 10, padding: "8px 12px", cursor: "pointer", color: T.txM, fontSize: 11, fontWeight: 600 }}>
-              Messe wechseln
+              {t("changeMesse")}
             </button>
           </div>
 
@@ -585,7 +585,7 @@ export default function App() {
           </div>
 
           <button onClick={startCamera} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), marginBottom: 10, boxShadow: `0 8px 32px rgba(43,85,151,.4)`, padding: "20px", fontSize: 17 }}>
-            <Ic name="camera" size={24} color={T.wh} /> Visitenkarte scannen
+            <Ic name="camera" size={24} color={T.wh} /> {t("scanCard")}
           </button>
           <button onClick={() => fileRef.current?.click()} style={{ ...S.btn("transparent", T.txM), border: `1px dashed ${T.bd}`, marginBottom: 28, padding: 14, fontSize: 14, fontWeight: 500 }}>
             {t("uploadPhoto")}
@@ -717,7 +717,7 @@ export default function App() {
         <div style={{ padding: "20px 20px 110px", animation: "fadeIn .3s" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
             <button onClick={() => setView("home")} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><Ic name="back" size={22} color={T.txM} /></button>
-            <h2 style={{ fontSize: 18, fontWeight: 700, flex: 1 }}>Meine Kontakte <span style={{ fontSize: 13, color: T.txM, fontWeight: 400 }}>({contacts.length})</span></h2>
+            <h2 style={{ fontSize: 18, fontWeight: 700, flex: 1 }}>{t("myContacts")} <span style={{ fontSize: 13, color: T.txM, fontWeight: 400 }}>({contacts.length})</span></h2>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, ...S.card, padding: "10px 16px", marginBottom: 20 }}><Ic name="search" size={16} color={T.txD} /><input type="text" placeholder={t("search")} value={searchQ} onChange={(e) => setSearchQ(e.target.value)} style={{ flex: 1, background: "none", border: "none", color: T.tx, fontSize: 14, outline: "none" }} /></div>
           {filtered.map((c, i) => (
@@ -744,7 +744,7 @@ export default function App() {
               </div>
             </div>
           ))}
-          {filtered.length === 0 && <p style={{ textAlign: "center", color: T.txM, padding: 40, fontSize: 14 }}>{searchQ ? t("noResults") : "Noch keine Kontakte"}</p>}
+          {filtered.length === 0 && <p style={{ textAlign: "center", color: T.txM, padding: 40, fontSize: 14 }}>{searchQ ? t("noResults") : t("noContacts")}</p>}
           {contacts.length > 0 && <button onClick={exportCSV} style={{ ...S.btn(T.sf, T.tx), border: `1px solid ${T.bd}`, marginTop: 16, fontSize: 14, fontWeight: 600 }}><Ic name="download" size={16} color={T.acc} /> CSV exportieren</button>}
         </div>
       )}
@@ -825,29 +825,29 @@ export default function App() {
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <label style={S.label}>SMTP Benutzername (Login)</label>
+              <label style={S.label}>  {t("smtpUsername")}</label>
               <input type="text" value={smtp.smtpUser} onChange={(e) => setSmtp((s) => ({ ...s, smtpUser: e.target.value }))} placeholder="z.B. user123 oder email@domain.de" style={S.input} />
-              <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>Bei den meisten Anbietern ist das deine Email. Bei United Domains etc. kann es ein separater Login sein.</p>
+              <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>{t("smtpUsernameHint")}</p>
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <label style={S.label}>Absender-Email</label>
+              <label style={S.label}>{t("senderEmail")}</label>
               <input type="email" value={smtp.smtpFrom} onChange={(e) => setSmtp((s) => ({ ...s, smtpFrom: e.target.value }))} placeholder="deinname@windoform.de" style={S.input} />
-              <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>Die Email die der Empfänger sieht (Von-Adresse).</p>
+              <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>{t("senderEmailHint")}</p>
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <label style={S.label}>Passwort / App-Passwort</label>
+              <label style={S.label}>{t("passwordAppPassword")}</label>
               <input type="password" value={smtp.smtpPass} onChange={(e) => setSmtp((s) => ({ ...s, smtpPass: e.target.value }))} placeholder="••••••••" style={S.input} />
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <label style={S.label}>Firmenname (in der Email)</label>
+              <label style={S.label}>{t("companyNameInEmail")}</label>
               <input type="text" value={smtp.companyName} onChange={(e) => setSmtp((s) => ({ ...s, companyName: e.target.value }))} placeholder="Windoform" style={S.input} />
             </div>
 
             <div style={{ marginBottom: 20 }}>
-              <label style={S.label}>Katalog-URL (Link in der Email)</label>
+              <label style={S.label}>{t("catalogUrl")}</label>
               <input type="url" value={smtp.catalogUrl} onChange={(e) => setSmtp((s) => ({ ...s, catalogUrl: e.target.value }))} placeholder="https://windoform.de/katalog" style={S.input} />
             </div>
 
@@ -860,7 +860,7 @@ export default function App() {
                 await setDoc(fbDoc(fbDb, "userSettings", user.uid), { smtp, updatedAt: new Date().toISOString() }, { merge: true });
                 setSmtpSaved(true);
                 notify(t("smtpSaved"));
-              } catch (e) { notify("Speichern fehlgeschlagen: " + e.message, "error"); }
+              } catch (e) { notify(t("saveFailed") + ": " + e.message, "error"); }
             }} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), marginBottom: 10, boxShadow: `0 4px 16px rgba(43,85,151,.25)` }}>
               Speichern
             </button>
@@ -871,11 +871,11 @@ export default function App() {
               const testTo = smtp.smtpFrom || smtp.smtpUser;
               const lang = await sendEmail(testTo, "Test", "Test-Messe", user?.displayName || "Test", smtp);
               setSmtpTesting(false);
-              if (lang) notify("Test-Email gesendet an " + testTo + "!");
-              else notify("Test fehlgeschlagen – Zugangsdaten prüfen", "error");
+              if (lang) notify(t("testSentTo") + " " +  + testTo + "!");
+              else notify(t("testFailed"), "error");
             }} disabled={smtpTesting} style={{ ...S.btn(T.sf2, T.txM), border: `1px solid ${T.bd}`, padding: 12, fontSize: 13, fontWeight: 600, opacity: smtpTesting ? .6 : 1 }}>
               <Ic name="mail" size={14} color={T.txM} />
-              {smtpTesting ? "Sende Test-Email..." : "Test-Email an mich senden"}
+              {smtpTesting ? t("sendingTest") : t("sendTestEmail")}
             </button>
           </div>
         </div>
