@@ -131,10 +131,10 @@ const translations = {
     english: "English",
 
     // Nav
-    saveAndWhatsapp: "Speichern + WhatsApp",
+    saveAndContact: "Speichern + Kontaktieren",
     noPhoneNumber: "Keine Telefonnummer vorhanden",
     whatsappCopied: "WhatsApp geöffnet – Nachricht einfügen mit Strg+V",
-    saveAndWhatsapp: "Save + WhatsApp",
+    saveAndContact: "Save + Contact",
     noPhoneNumber: "No phone number available",
     whatsappCopied: "WhatsApp opened – paste message with Ctrl+V",
     navScan: "Scan",
@@ -261,7 +261,7 @@ const translations = {
     turkish: "Türkçe",
     english: "English",
 
-    saveAndWhatsapp: "Kaydet + WhatsApp",
+    saveAndContact: "Kaydet + İletişime Geç",
     noPhoneNumber: "Telefon numarası yok",
     whatsappCopied: "WhatsApp açıldı – mesajı yapıştırın",
     navScan: "Tara",
@@ -388,10 +388,10 @@ const translations = {
     turkish: "Türkçe",
     english: "English",
 
-    saveAndWhatsapp: "Speichern + WhatsApp",
+    saveAndContact: "Speichern + Kontaktieren",
     noPhoneNumber: "Keine Telefonnummer vorhanden",
     whatsappCopied: "WhatsApp geöffnet – Nachricht einfügen mit Strg+V",
-    saveAndWhatsapp: "Save + WhatsApp",
+    saveAndContact: "Save + Contact",
     noPhoneNumber: "No phone number available",
     whatsappCopied: "WhatsApp opened – paste message with Ctrl+V",
     navScan: "Scan",

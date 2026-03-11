@@ -398,20 +398,34 @@ export default function App() {
     });
   };
 
-  // ---- SAVE ----
-  const saveContact = async (withEmail = true, forceOverwrite = false) => {
+  // ---- AUTO-DETECT WEBSITE FROM EMAIL ----
+  const autoFillWebsite = (contact) => {
+    if (contact.website || !contact.email) return contact;
+    const domain = contact.email.split("@")[1];
+    if (domain && !domain.includes("gmail") && !domain.includes("yahoo") && !domain.includes("hotmail") && !domain.includes("outlook") && !domain.includes("icloud") && !domain.includes("aol") && !domain.includes("web.de") && !domain.includes("gmx")) {
+      return { ...contact, website: domain };
+    }
+    return contact;
+  };
+
+  // ---- SAVE + CONTACT (Email always + WhatsApp if mobile exists) ----
+  const saveContact = async (withContact = true, forceOverwrite = false) => {
     if (!current) return;
+
+    // Auto-fill website from email domain
+    const enriched = autoFillWebsite(current);
+    setCurrent(enriched);
 
     // Duplicate check
     if (!forceOverwrite && !editingContact) {
-      const dupe = findDuplicate(current);
+      const dupe = findDuplicate(enriched);
       if (dupe) {
-        setShowDupeWarning({ existing: dupe, withEmail });
+        setShowDupeWarning({ existing: dupe, withEmail: withContact });
         return;
       }
     }
 
-    const contactData = { ...current, emailSent: false, savedAt: new Date().toISOString() };
+    const contactData = { ...enriched, emailSent: false, whatsappSent: false, savedAt: new Date().toISOString() };
 
     // If editing existing contact, update instead of create
     if (editingContact) {
@@ -421,41 +435,47 @@ export default function App() {
       await saveContactToFirebase(contactData);
     }
 
-    if (withEmail && current.email) {
-      const lang = await sendEmail(current.email, current.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp);
-      if (lang) { contactData.emailSent = true; setEmailSent(true); setTimeout(() => setEmailSent(false), 2500); notify(`Email (${LANG_LABELS[lang] || lang}) an ${current.email} gesendet!`); }
-      else notify(smtpSaved ? t("emailFailed") : t("setupEmailFirst"), "error");
-    } else if (withEmail && !current.email) { notify(t("noEmailAddress"), "warn"); }
-    else if (!editingContact) { notify(t("contactSaved")); }
+    if (withContact) {
+      // 1. Always send email if address exists
+      if (enriched.email) {
+        const lang = await sendEmail(enriched.email, enriched.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp);
+        if (lang) {
+          contactData.emailSent = true;
+          setEmailSent(true);
+          setTimeout(() => setEmailSent(false), 2500);
+        } else {
+          notify(smtpSaved ? t("emailFailed") : t("setupEmailFirst"), "error");
+        }
+      }
 
-    setCurrent(null); setCapturedImg(null); setEditingContact(null); setShowDupeWarning(null); setView("home");
-  };
+      // 2. Also open WhatsApp if mobile number exists
+      const waPhone = getBestWhatsAppNumber(enriched);
+      if (waPhone) {
+        const contactLang = detectContactLang(enriched.email, enriched.name);
+        const catalog = smtp.catalogUrl || "https://windoform.de";
+        const message = getWhatsAppMessage(contactLang, enriched.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, catalog);
+        contactData.whatsappSent = true;
 
-  // ---- SAVE + WHATSAPP ----
-  const saveContactWhatsApp = async () => {
-    if (!current) return;
-    const waPhone = getBestWhatsAppNumber(current);
-    if (!waPhone) { notify(t("noPhoneNumber"), "warn"); return; }
+        // Small delay so user sees email notification first
+        setTimeout(() => {
+          openWhatsApp(waPhone, message);
+          notify(t("whatsappCopied"));
+        }, contactData.emailSent ? 1500 : 100);
+      }
 
-    const contactData = { ...current, whatsappSent: true, savedAt: new Date().toISOString() };
-
-    if (editingContact) {
-      await updateContactInFirebase(editingContact.id, contactData);
-    } else {
-      // Duplicate check
-      const dupe = findDuplicate(current);
-      if (dupe) { setShowDupeWarning({ existing: dupe, withEmail: false, whatsapp: true }); return; }
-      await saveContactToFirebase(contactData);
+      // Notify based on what happened
+      if (contactData.emailSent && waPhone) {
+        notify(`Email + WhatsApp → ${enriched.name}`);
+      } else if (contactData.emailSent) {
+        // Email notification already shown
+      } else if (!enriched.email) {
+        notify(t("noEmailAddress"), "warn");
+      }
+    } else if (!editingContact) {
+      notify(t("contactSaved"));
     }
 
-    // Detect language and create message
-    const contactLang = detectContactLang(current.email, current.name);
-    const catalog = smtp.catalogUrl || "https://windoform.de";
-    const message = getWhatsAppMessage(contactLang, current.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, catalog);
-
-    openWhatsApp(waPhone, message);
-    notify(t("whatsappCopied"));
-    setCurrent(null); setCapturedImg(null); setEditingContact(null); setView("home");
+    setCurrent(null); setCapturedImg(null); setEditingContact(null); setShowDupeWarning(null); setView("home");
   };
 
   // ---- EDIT ----
@@ -823,15 +843,14 @@ export default function App() {
             {editingContact ? (
               <>
                 <button onClick={() => saveContact(false)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), boxShadow: `0 6px 24px rgba(43,85,151,.35)`, marginBottom: 8 }}><Ic name="check" size={18} color={T.wh} /> {t("saveChanges")}</button>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => saveContact(true)} style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}`, flex: 1, padding: 12, fontSize: 13 }}><Ic name="mail" size={14} color={T.txM} /> Email</button>
-                  <button onClick={() => saveContactWhatsApp()} style={{ ...S.btn(T.sf, "#25D366"), border: "1px solid #25D36633", flex: 1, padding: 12, fontSize: 13 }}><Ic name="whatsapp" size={14} color="#25D366" /> WhatsApp</button>
-                </div>
+                <button onClick={() => saveContact(true)} style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}`, padding: 12, fontSize: 13 }}><Ic name="mail" size={14} color={T.txM} /> {t("saveAndContact")}</button>
               </>
             ) : (
               <>
-                <button onClick={() => saveContact(true)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), boxShadow: `0 6px 24px rgba(43,85,151,.35)`, marginBottom: 8 }}><Ic name="mail" size={18} color={T.wh} /> {t("saveAndEmail")}</button>
-                <button onClick={() => saveContactWhatsApp()} style={{ ...S.btn("#25D366", T.wh), marginBottom: 8 }}><Ic name="whatsapp" size={18} color={T.wh} /> {t("saveAndWhatsapp")}</button>
+                <button onClick={() => saveContact(true)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), boxShadow: `0 6px 24px rgba(43,85,151,.35)`, marginBottom: 8, position: "relative" }}>
+                  <Ic name="mail" size={18} color={T.wh} /> {t("saveAndContact")}
+                  {getBestWhatsAppNumber(current) && <span style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)" }}><Ic name="whatsapp" size={16} color="rgba(255,255,255,.7)" /></span>}
+                </button>
                 <button onClick={() => saveContact(false)} style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}`, padding: 12, fontSize: 13 }}>{t("saveOnly")}</button>
               </>
             )}
