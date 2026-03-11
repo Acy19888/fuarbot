@@ -101,14 +101,70 @@ function detectContactLang(email, name) {
   return "en";
 }
 
-function openWhatsApp(phone, message) {
-  // Clean phone number: remove spaces, dashes, brackets
-  let clean = (phone || "").replace(/[\s\-\(\)]/g, "");
-  // Ensure it starts with country code
-  if (clean.startsWith("0")) clean = "+49" + clean.substring(1); // default Germany
+// Smart mobile number detection
+function cleanPhoneNumber(phone) {
+  return (phone || "").replace(/[\s\-\(\)\.\/]/g, "");
+}
+
+function isMobileNumber(phone) {
+  const clean = cleanPhoneNumber(phone);
+  
+  // Turkey: +90 5xx
+  if (/^\+?90\s?5/.test(clean)) return true;
+  // Germany: +49 1xx (15x, 16x, 17x)
+  if (/^\+?49\s?1[567]/.test(clean)) return true;
+  // Germany local: 01xx
+  if (/^01[567]/.test(clean)) return true;
+  // USA/Canada: all numbers are mobile-capable
+  if (/^\+?1[2-9]/.test(clean)) return true;
+  // UK: +44 7xx
+  if (/^\+?44\s?7/.test(clean)) return true;
+  // France: +33 [67]
+  if (/^\+?33\s?[67]/.test(clean)) return true;
+  // Italy: +39 3xx
+  if (/^\+?39\s?3/.test(clean)) return true;
+  // Spain: +34 [67]
+  if (/^\+?34\s?[67]/.test(clean)) return true;
+  // Netherlands: +31 6
+  if (/^\+?31\s?6/.test(clean)) return true;
+  // Austria: +43 6xx
+  if (/^\+?43\s?6/.test(clean)) return true;
+  // Switzerland: +41 7x
+  if (/^\+?41\s?7[5-9]/.test(clean)) return true;
+  // Poland: +48 [5-8]
+  if (/^\+?48\s?[5-8]/.test(clean)) return true;
+  // If mobile field is explicitly set, trust it
+  return false;
+}
+
+function getBestWhatsAppNumber(contact) {
+  // Priority 1: explicit mobile number
+  if (contact.mobile && cleanPhoneNumber(contact.mobile).length > 5) return contact.mobile;
+  // Priority 2: phone number that is actually mobile
+  if (contact.phone && isMobileNumber(contact.phone)) return contact.phone;
+  // Priority 3: any phone number (user might have entered mobile as phone)
+  if (contact.phone && cleanPhoneNumber(contact.phone).length > 5) return contact.phone;
+  return null;
+}
+
+function formatPhoneForWhatsApp(phone) {
+  let clean = cleanPhoneNumber(phone);
+  // Turkish local: 05xx → +90 5xx
+  if (/^05/.test(clean)) clean = "+90" + clean.substring(1);
+  // German local: 01xx → +49 1xx
+  if (/^01[567]/.test(clean)) clean = "+49" + clean.substring(1);
+  // Generic local: 0xx → assume +49
+  if (clean.startsWith("0")) clean = "+49" + clean.substring(1);
+  // Add + if missing
   if (!clean.startsWith("+")) clean = "+" + clean;
+  // Remove + for wa.me URL
+  return clean.replace("+", "");
+}
+
+function openWhatsApp(phone, message) {
+  const waNumber = formatPhoneForWhatsApp(phone);
   const encoded = encodeURIComponent(message);
-  window.open(`https://wa.me/${clean.replace("+", "")}?text=${encoded}`, "_blank");
+  window.open(`https://wa.me/${waNumber}?text=${encoded}`, "_blank");
 }
 
 function demoContact() {
@@ -376,14 +432,17 @@ export default function App() {
   // ---- SAVE + WHATSAPP ----
   const saveContactWhatsApp = async () => {
     if (!current) return;
-    const phone = current.phone || current.mobile;
-    if (!phone) { notify(t("noPhoneNumber"), "warn"); return; }
+    const waPhone = getBestWhatsAppNumber(current);
+    if (!waPhone) { notify(t("noPhoneNumber"), "warn"); return; }
 
     const contactData = { ...current, whatsappSent: true, savedAt: new Date().toISOString() };
 
     if (editingContact) {
       await updateContactInFirebase(editingContact.id, contactData);
     } else {
+      // Duplicate check
+      const dupe = findDuplicate(current);
+      if (dupe) { setShowDupeWarning({ existing: dupe, withEmail: false, whatsapp: true }); return; }
       await saveContactToFirebase(contactData);
     }
 
@@ -392,8 +451,8 @@ export default function App() {
     const catalog = smtp.catalogUrl || "https://windoform.de";
     const message = getWhatsAppMessage(contactLang, current.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, catalog);
 
-    openWhatsApp(phone, message);
-    notify(t("whatsappOpened"));
+    openWhatsApp(waPhone, message);
+    notify(`${t("whatsappOpened")} (${isMobileNumber(waPhone) ? "Mobil" : "Tel"}: ${waPhone})`);
     setCurrent(null); setCapturedImg(null); setEditingContact(null); setView("home");
   };
 
