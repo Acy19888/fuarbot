@@ -442,11 +442,7 @@ export default function App() {
         <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "40px 24px", animation: "fadeIn .4s" }}>
           {/* Logo */}
           <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ width: 64, height: 64, borderRadius: 16, background: T.acc, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", boxShadow: `0 8px 32px rgba(43,85,151,.4)` }}>
-              <svg width="36" height="36" viewBox="0 0 100 80" fill="none">
-                <path d="M10 10 L25 70 L38 30 L50 70 L62 30 L75 70 L90 10" stroke="#fff" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-              </svg>
-            </div>
+            <img src="/logo.jpg" alt="Windoform" style={{ width: 80, height: 80, borderRadius: 20, margin: "0 auto 16px", display: "block", boxShadow: `0 8px 32px rgba(43,85,151,.3)` }} />
             <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-.02em" }}>WINDOFORM</h1>
             <p style={{ fontSize: 13, color: T.txM, marginTop: 4, letterSpacing: ".1em", fontWeight: 500 }}>FUAR ASISTANI</p>
           </div>
@@ -541,9 +537,7 @@ export default function App() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: T.acc, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 16px rgba(43,85,151,.3)` }}>
-                  <svg width="20" height="20" viewBox="0 0 100 80" fill="none"><path d="M10 10 L25 70 L38 30 L50 70 L62 30 L75 70 L90 10" stroke="#fff" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-                </div>
+                <img src="/logo.jpg" alt="W" style={{ width: 38, height: 38, borderRadius: 10, boxShadow: `0 4px 16px rgba(43,85,151,.3)` }} />
                 <div>
                   <h1 style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-.01em", lineHeight: 1 }}>WINDOFORM</h1>
                   <p style={{ fontSize: 9, color: T.txM, letterSpacing: ".1em", fontWeight: 600 }}>FUAR ASISTANI</p>
