@@ -163,8 +163,10 @@ function formatPhoneForWhatsApp(phone) {
 
 function openWhatsApp(phone, message) {
   const waNumber = formatPhoneForWhatsApp(phone);
-  const encoded = encodeURIComponent(message);
-  window.open(`https://wa.me/${waNumber}?text=${encoded}`, "_blank");
+  // Copy message to clipboard instead of pre-filling (avoids WhatsApp spam detection)
+  navigator.clipboard.writeText(message).catch(() => {});
+  // Open WhatsApp chat without pre-filled text
+  window.open(`https://wa.me/${waNumber}`, "_blank");
 }
 
 function demoContact() {
@@ -452,7 +454,7 @@ export default function App() {
     const message = getWhatsAppMessage(contactLang, current.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, catalog);
 
     openWhatsApp(waPhone, message);
-    notify(`${t("whatsappOpened")} (${isMobileNumber(waPhone) ? "Mobil" : "Tel"}: ${waPhone})`);
+    notify(t("whatsappCopied"));
     setCurrent(null); setCapturedImg(null); setEditingContact(null); setView("home");
   };
 
