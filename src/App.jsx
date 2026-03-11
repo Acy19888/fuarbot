@@ -43,17 +43,31 @@ const S = {
 // ============================================================
 async function scanCard(base64, mediaType) {
   try {
+    console.log("[FuarBot] Sending scan request to /api/scan...");
+    console.log("[FuarBot] Image size:", Math.round(base64.length / 1024), "KB");
+
     const res = await fetch("/api/scan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ image: base64, mediaType }),
     });
+
+    console.log("[FuarBot] Response status:", res.status);
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("[FuarBot] API Error:", errText);
+      return null;
+    }
+
     const data = await res.json();
+    console.log("[FuarBot] API Response:", data);
+
     if (data.success && data.contact) return data.contact;
-    throw new Error(data.error || "Scan failed");
+    console.error("[FuarBot] Scan failed:", data.error || data.raw);
+    return null;
   } catch (err) {
-    console.error("Scan error:", err);
-    // Return null to signal demo mode
+    console.error("[FuarBot] Network error:", err.message);
     return null;
   }
 }
@@ -235,12 +249,15 @@ export default function App() {
     // Try real scan
     let contact = await scanCard(base64, mType);
 
-    if (!contact) {
+    if (contact) {
+      setDemoMode(false);
+      notify("Visitenkarte erkannt!", "success");
+    } else {
       // Fallback to demo
       setDemoMode(true);
       await new Promise((r) => setTimeout(r, 1500));
       contact = demoContact();
-      notify("Demo-Modus: API nicht verfügbar", "warn");
+      notify("Demo-Modus – prüfe API Key in Vercel Settings", "warn");
     }
 
     setCurrent({
@@ -269,7 +286,7 @@ export default function App() {
 
     const contactData = {
       ...current,
-      emailSent: withEmail,
+      emailSent: false,
       savedAt: new Date().toISOString(),
     };
 
@@ -281,16 +298,40 @@ export default function App() {
       setContacts((prev) => [{ id: Date.now().toString(), ...contactData }, ...prev]);
     }
 
-    if (withEmail) {
-      setEmailSent(true);
-      setTimeout(() => setEmailSent(false), 2500);
-    }
+    // Send follow-up email
+    if (withEmail && current.email) {
+      try {
+        console.log("[FuarBot] Sending email to:", current.email);
+        const emailRes = await fetch("/api/email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: current.email,
+            contactName: current.name,
+            messeName: messe,
+            salesPerson: person,
+          }),
+        });
+        const emailData = await emailRes.json();
+        console.log("[FuarBot] Email response:", emailData);
 
-    notify(
-      withEmail
-        ? `Gespeichert + Email an ${contactData.email}`
-        : "Kontakt gespeichert"
-    );
+        if (emailData.success) {
+          contactData.emailSent = true;
+          setEmailSent(true);
+          setTimeout(() => setEmailSent(false), 2500);
+          notify(`Email an ${current.email} gesendet!`);
+        } else {
+          notify(`Gespeichert, aber Email fehlgeschlagen: ${emailData.message || emailData.error}`, "error");
+        }
+      } catch (emailErr) {
+        console.error("[FuarBot] Email error:", emailErr);
+        notify("Gespeichert, aber Email konnte nicht gesendet werden", "error");
+      }
+    } else if (withEmail && !current.email) {
+      notify("Gespeichert – keine Email-Adresse vorhanden", "warn");
+    } else {
+      notify("Kontakt gespeichert");
+    }
 
     setCurrent(null);
     setCapturedImg(null);
