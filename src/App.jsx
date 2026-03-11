@@ -5,6 +5,7 @@ import {
   loginUser, registerUser, logoutUser, onAuthChange,
   saveUserSettings, getUserSettings,
 } from "./firebase.js";
+import { detectSystemLanguage, useTranslation } from "./i18n.js";
 
 // ============================================================
 // CONFIG
@@ -125,6 +126,10 @@ export default function App() {
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
 
+  // Language
+  const [lang, setLang] = useState(() => detectSystemLanguage());
+  const t = useTranslation(lang);
+
   // Messe selection
   const [selectedMesse, setSelectedMesse] = useState(null);
 
@@ -207,9 +212,9 @@ export default function App() {
     try {
       await loginUser(authEmail.trim(), authPass);
     } catch (err) {
-      const msg = err.code === "auth/invalid-credential" ? "Email oder Passwort falsch"
-        : err.code === "auth/user-not-found" ? "Kein Konto mit dieser Email"
-        : err.code === "auth/too-many-requests" ? "Zu viele Versuche – warte kurz"
+      const msg = err.code === "auth/invalid-credential" ? t("emailOrPassWrong")
+        : err.code === "auth/user-not-found" ? t("noUserFound")
+        : err.code === "auth/too-many-requests" ? t("tooManyAttempts")
         : err.message;
       setAuthError(msg);
     }
@@ -218,15 +223,15 @@ export default function App() {
 
   const handleRegister = async () => {
     setAuthError("");
-    if (!authName.trim()) { setAuthError("Name eingeben"); return; }
-    if (authPass.length < 6) { setAuthError("Passwort muss min. 6 Zeichen haben"); return; }
+    if (!authName.trim()) { setAuthError(t("enterName")); return; }
+    if (authPass.length < 6) { setAuthError(t("minPassword")); return; }
     setAuthLoading(true);
     try {
       await registerUser(authEmail.trim(), authPass, authName.trim());
     } catch (err) {
-      const msg = err.code === "auth/email-already-in-use" ? "Email wird bereits verwendet"
-        : err.code === "auth/weak-password" ? "Passwort zu schwach (min. 6 Zeichen)"
-        : err.code === "auth/invalid-email" ? "Ungültige Email-Adresse"
+      const msg = err.code === "auth/email-already-in-use" ? t("emailInUse")
+        : err.code === "auth/weak-password" ? t("weakPassword")
+        : err.code === "auth/invalid-email" ? t("invalidEmail")
         : err.message;
       setAuthError(msg);
     }
@@ -279,8 +284,8 @@ export default function App() {
     const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
     const mType = dataUrl.match(/^data:(image\/\w+);/)?.[1] || mediaType;
     let contact = await scanCard(base64, mType);
-    if (contact) { setDemoMode(false); notify("Visitenkarte erkannt!"); }
-    else { setDemoMode(true); await new Promise((r) => setTimeout(r, 1500)); contact = demoContact(); notify("Demo-Modus", "warn"); }
+    if (contact) { setDemoMode(false); notify(t("recognized")); }
+    else { setDemoMode(true); await new Promise((r) => setTimeout(r, 1500)); contact = demoContact(); notify(t("demoMode"), "warn"); }
     setCurrent({ ...contact, scannedBy: user?.displayName || user?.email || "?", scannedAt: new Date().toISOString(), messe: selectedMesse?.name + " " + selectedMesse?.city, messeId: selectedMesse?.id, userId: user?.uid, emailSent: false, notes: "" });
     setScanning(false); setView("review");
   };
@@ -315,7 +320,7 @@ export default function App() {
     // If editing existing contact, update instead of create
     if (editingContact) {
       await updateContactInFirebase(editingContact.id, contactData);
-      notify("Kontakt aktualisiert");
+      notify(t("contactUpdated"));
     } else {
       await saveContactToFirebase(contactData);
     }
@@ -323,9 +328,9 @@ export default function App() {
     if (withEmail && current.email) {
       const lang = await sendEmail(current.email, current.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp);
       if (lang) { contactData.emailSent = true; setEmailSent(true); setTimeout(() => setEmailSent(false), 2500); notify(`Email (${LANG_LABELS[lang] || lang}) an ${current.email} gesendet!`); }
-      else notify(smtpSaved ? "Email fehlgeschlagen – SMTP prüfen" : "Bitte zuerst Email in Settings einrichten", "error");
-    } else if (withEmail && !current.email) { notify("Keine Email-Adresse", "warn"); }
-    else if (!editingContact) { notify("Kontakt gespeichert"); }
+      else notify(smtpSaved ? t("emailFailed") : t("setupEmailFirst"), "error");
+    } else if (withEmail && !current.email) { notify(t("noEmailAddress"), "warn"); }
+    else if (!editingContact) { notify(t("contactSaved")); }
 
     setCurrent(null); setCapturedImg(null); setEditingContact(null); setShowDupeWarning(null); setView("home");
   };
@@ -342,19 +347,19 @@ export default function App() {
   const deleteContact = async (contact) => {
     if (!contact?.id) return;
     await deleteContactFromFirebase(contact.id);
-    notify("Kontakt gelöscht");
+    notify(t("contactDeleted"));
     setCurrent(null); setEditingContact(null); setView("contacts");
   };
 
   const upd = (k, v) => setCurrent((p) => ({ ...p, [k]: v }));
 
   const exportCSV = () => {
-    const h = ["Name", "Firma", "Position", "Email", "Telefon", "Mobil", "Website", "Adresse", "Gescannt von", "Datum", "Messe", "Notizen"];
+    const h = ["Name", t("firma"), t("position"), "Email", t("phone"), t("mobile"), t("website"), t("address"), "Gescannt von", "Datum", "Messe", t("notes")];
     const rows = contacts.map((c) => [c.name, c.company, c.position, c.email, c.phone, c.mobile, c.website, c.address, c.scannedBy, new Date(c.scannedAt).toLocaleDateString("de-DE"), c.messe, c.notes].map((v) => `"${(v || "").replace(/"/g, '""')}"`));
     const blob = new Blob(["\ufeff" + [h.join(","), ...rows.map((r) => r.join(","))].join("\n")], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
     a.download = `fuarbot-${selectedMesse?.id || "export"}-${new Date().toISOString().split("T")[0]}.csv`; a.click();
-    notify("CSV exportiert!");
+    notify(t("csvExported"));
   };
 
   const filtered = contacts.filter((c) => {
@@ -404,7 +409,7 @@ export default function App() {
               <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(251,191,36,.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Ic name="users" size={20} color={T.warn} />
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700 }}>Mögliche Dublette</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700 }}>{t("possibleDuplicate")}</h3>
             </div>
             <p style={{ fontSize: 13, color: T.txM, lineHeight: 1.6, marginBottom: 16 }}>
               Ein ähnlicher Kontakt existiert bereits:
@@ -432,7 +437,7 @@ export default function App() {
         <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ textAlign: "center" }}>
             <div style={{ width: 48, height: 48, border: `3px solid ${T.bd}`, borderTopColor: T.acc, borderRadius: "50%", animation: "pulse 1s linear infinite", margin: "0 auto 16px" }} />
-            <p style={{ color: T.txM }}>Laden...</p>
+            <p style={{ color: T.txM }}>{t("login")}...</p>
           </div>
         </div>
       )}
@@ -450,23 +455,23 @@ export default function App() {
           {/* Form */}
           <div style={{ ...S.card, padding: 24 }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, textAlign: "center" }}>
-              {authView === "login" ? "Anmelden" : "Konto erstellen"}
+              {authView === "login" ? t("login") : t("register")}
             </h2>
 
             {authView === "register" && (
               <div style={{ marginBottom: 14 }}>
-                <label style={S.label}>Name</label>
-                <input type="text" placeholder="Dein Name" value={authName} onChange={(e) => setAuthName(e.target.value)} style={S.input} onFocus={(e) => e.target.style.borderColor = T.acc} onBlur={(e) => e.target.style.borderColor = T.bd} />
+                <label style={S.label}>{t("name")}</label>
+                <input type="text" placeholder={t("yourName")} value={authName} onChange={(e) => setAuthName(e.target.value)} style={S.input} onFocus={(e) => e.target.style.borderColor = T.acc} onBlur={(e) => e.target.style.borderColor = T.bd} />
               </div>
             )}
 
             <div style={{ marginBottom: 14 }}>
-              <label style={S.label}>Email</label>
+              <label style={S.label}>{t("email")}</label>
               <input type="email" placeholder="name@windoform.de" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} style={S.input} onFocus={(e) => e.target.style.borderColor = T.acc} onBlur={(e) => e.target.style.borderColor = T.bd} />
             </div>
 
             <div style={{ marginBottom: 20 }}>
-              <label style={S.label}>Passwort</label>
+              <label style={S.label}>{t("password")}</label>
               <input type="password" placeholder="••••••" value={authPass} onChange={(e) => setAuthPass(e.target.value)} style={S.input} onFocus={(e) => e.target.style.borderColor = T.acc} onBlur={(e) => e.target.style.borderColor = T.bd}
                 onKeyDown={(e) => e.key === "Enter" && (authView === "login" ? handleLogin() : handleRegister())}
               />
@@ -476,15 +481,29 @@ export default function App() {
 
             <button onClick={authView === "login" ? handleLogin : handleRegister} disabled={authLoading} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), opacity: authLoading ? .6 : 1, boxShadow: `0 6px 24px rgba(43,85,151,.3)` }}>
               <Ic name="lock" size={18} color={T.wh} />
-              {authLoading ? "..." : authView === "login" ? "Anmelden" : "Registrieren"}
+              {authLoading ? "..." : authView === "login" ? t("login") : t("register")}
             </button>
 
             <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: T.txM }}>
-              {authView === "login" ? "Noch kein Konto? " : "Schon ein Konto? "}
+              {authView === "login" ? t("noAccount") + " " : t("hasAccount") + " "}
               <button onClick={() => { setAuthView(authView === "login" ? "register" : "login"); setAuthError(""); }} style={{ background: "none", border: "none", color: T.acc, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                {authView === "login" ? "Registrieren" : "Anmelden"}
+                {authView === "login" ? t("register") : t("login")}
               </button>
             </p>
+          </div>
+
+          {/* Language selector */}
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 24 }}>
+            {[{ code: "de", flag: "🇩🇪" }, { code: "tr", flag: "🇹🇷" }, { code: "en", flag: "🇬🇧" }].map((l) => (
+              <button key={l.code} onClick={() => setLang(l.code)} style={{
+                padding: "8px 16px", borderRadius: 10, fontSize: 14, cursor: "pointer",
+                background: lang === l.code ? T.accG : "transparent",
+                border: `1px solid ${lang === l.code ? T.acc : T.bd}`,
+                color: lang === l.code ? T.tx : T.txM,
+              }}>
+                {l.flag}
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -494,7 +513,7 @@ export default function App() {
         <div style={{ minHeight: "100vh", padding: "40px 24px", animation: "fadeIn .4s" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 36 }}>
             <div>
-              <p style={{ fontSize: 13, color: T.txM }}>Willkommen,</p>
+              <p style={{ fontSize: 13, color: T.txM }}>{t("welcome")}</p>
               <h1 style={{ fontSize: 22, fontWeight: 800 }}>{user.displayName || user.email}</h1>
             </div>
             <button onClick={handleLogout} style={{ background: T.sf, border: `1px solid ${T.bd}`, borderRadius: 10, padding: "8px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: T.txM, fontSize: 12, fontWeight: 600 }}>
@@ -504,7 +523,7 @@ export default function App() {
 
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
             <Ic name="map" size={20} color={T.acc} />
-            <h2 style={{ fontSize: 18, fontWeight: 700 }}>Messe auswählen</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 700 }}>{t("selectMesse")}</h2>
           </div>
 
           {MESSEN.map((m, i) => (
@@ -554,9 +573,9 @@ export default function App() {
           {/* Stats */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 28 }}>
             {[
-              { l: "Gesamt", v: stats.total, c: T.acc },
-              { l: "Heute", v: stats.today, c: T.accS },
-              { l: "Emails", v: stats.emailed, c: T.ok },
+              { l: t("total"), v: stats.total, c: T.acc },
+              { l: t("today"), v: stats.today, c: T.accS },
+              { l: t("emails"), v: stats.emailed, c: T.ok },
             ].map((s, i) => (
               <div key={i} style={{ ...S.card, padding: "14px 16px", textAlign: "center", animation: `slideUp .4s ease ${i * .07}s both` }}>
                 <span style={{ fontSize: 11, color: T.txM, fontWeight: 500, textTransform: "uppercase", letterSpacing: ".05em", display: "block", marginBottom: 6 }}>{s.l}</span>
@@ -569,15 +588,15 @@ export default function App() {
             <Ic name="camera" size={24} color={T.wh} /> Visitenkarte scannen
           </button>
           <button onClick={() => fileRef.current?.click()} style={{ ...S.btn("transparent", T.txM), border: `1px dashed ${T.bd}`, marginBottom: 28, padding: 14, fontSize: 14, fontWeight: 500 }}>
-            📷 Foto aus Galerie wählen
+            {t("uploadPhoto")}
           </button>
 
           {/* Contacts */}
           {contacts.length > 0 && (
             <>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
-                <h2 style={{ fontSize: 16, fontWeight: 700 }}>Meine Kontakte</h2>
-                <button onClick={() => setView("contacts")} style={{ background: "none", border: "none", color: T.acc, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Alle →</button>
+                <h2 style={{ fontSize: 16, fontWeight: 700 }}>{t("myContacts")}</h2>
+                <button onClick={() => setView("contacts")} style={{ background: "none", border: "none", color: T.acc, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{t("showAll")}</button>
               </div>
               {contacts.slice(0, 4).map((c, i) => (
                 <div key={c.id} style={{ ...S.card, padding: "14px 16px", marginBottom: 8, display: "flex", alignItems: "center", gap: 12, animation: `slideUp .3s ease ${i * .05}s both` }}>
@@ -596,8 +615,8 @@ export default function App() {
           {contacts.length === 0 && (
             <div style={{ textAlign: "center", padding: "48px 20px" }}>
               <Ic name="camera" size={30} color={T.txD} />
-              <p style={{ fontSize: 15, fontWeight: 600, color: T.txM, marginTop: 12 }}>Noch keine Kontakte</p>
-              <p style={{ fontSize: 13, color: T.txD, marginTop: 6 }}>Scanne deine erste Visitenkarte</p>
+              <p style={{ fontSize: 15, fontWeight: 600, color: T.txM, marginTop: 12 }}>{t("noContacts")}</p>
+              <p style={{ fontSize: 13, color: T.txD, marginTop: 6 }}>{t("scanFirst")}</p>
             </div>
           )}
         </div>
@@ -610,19 +629,19 @@ export default function App() {
             {capturedImg ? <img src={capturedImg} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", background: "#111" }} /> : (
               <>
                 <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                {cameraError && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.9)", padding: 32 }}><div style={{ textAlign: "center" }}><Ic name="wifiOff" size={40} color={T.acc} /><p style={{ color: T.tx, fontSize: 14, marginTop: 16, lineHeight: 1.6 }}>{cameraError}</p><button onClick={() => fileRef.current?.click()} style={{ marginTop: 20, padding: "12px 28px", background: T.acc, border: "none", borderRadius: 10, color: T.wh, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Foto hochladen</button></div></div>}
+                {cameraError && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.9)", padding: 32 }}><div style={{ textAlign: "center" }}><Ic name="wifiOff" size={40} color={T.acc} /><p style={{ color: T.tx, fontSize: 14, marginTop: 16, lineHeight: 1.6 }}>{cameraError}</p><button onClick={() => fileRef.current?.click()} style={{ marginTop: 20, padding: "12px 28px", background: T.acc, border: "none", borderRadius: 10, color: T.wh, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>{t("uploadPhotoBtn")}</button></div></div>}
                 {cameraActive && !cameraError && (
                   <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <div style={{ width: "88%", height: "52%", position: "relative", border: `2px solid rgba(43,85,151,.4)`, borderRadius: 16 }}>
                       <div style={{ position: "absolute", left: "5%", right: "5%", height: 2, background: `linear-gradient(90deg, transparent, ${T.acc}, transparent)`, animation: "scanLine 2s ease-in-out infinite alternate", boxShadow: `0 0 12px ${T.acc}` }} />
                       {[["top","left"],["top","right"],["bottom","left"],["bottom","right"]].map(([v,h]) => <div key={v+h} style={{ position: "absolute", [v]: -2, [h]: -2, width: 24, height: 24, borderColor: T.acc, borderStyle: "solid", borderWidth: 0, [`border${v==="top"?"Top":"Bottom"}Width`]: 3, [`border${h==="left"?"Left":"Right"}Width`]: 3, borderRadius: 8 }} />)}
-                      <p style={{ position: "absolute", bottom: -40, width: "100%", textAlign: "center", fontSize: 13, color: "rgba(255,255,255,.6)", fontWeight: 500 }}>Visitenkarte im Rahmen positionieren</p>
+                      <p style={{ position: "absolute", bottom: -40, width: "100%", textAlign: "center", fontSize: 13, color: "rgba(255,255,255,.6)", fontWeight: 500 }}>{t("positionCard")}</p>
                     </div>
                   </div>
                 )}
               </>
             )}
-            {scanning && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(11,14,20,.88)", backdropFilter: "blur(10px)", zIndex: 10 }}><div style={{ textAlign: "center" }}><div style={{ width: 84, height: 84, margin: "0 auto 20px", border: `3px solid ${T.acc}`, borderRadius: 18, animation: "pulse 1.2s ease-in-out infinite", display: "flex", alignItems: "center", justifyContent: "center" }}><Ic name="zap" size={34} color={T.acc} /></div><p style={{ color: T.tx, fontSize: 17, fontWeight: 700 }}>AI analysiert Karte...</p></div></div>}
+            {scanning && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(11,14,20,.88)", backdropFilter: "blur(10px)", zIndex: 10 }}><div style={{ textAlign: "center" }}><div style={{ width: 84, height: 84, margin: "0 auto 20px", border: `3px solid ${T.acc}`, borderRadius: 18, animation: "pulse 1.2s ease-in-out infinite", display: "flex", alignItems: "center", justifyContent: "center" }}><Ic name="zap" size={34} color={T.acc} /></div><p style={{ color: T.tx, fontSize: 17, fontWeight: 700 }}>{t("aiAnalyzing")}</p></div></div>}
           </div>
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 20px 44px", background: "linear-gradient(transparent, rgba(0,0,0,.95) 30%)" }}>
             <div style={{ display: "flex", justifyContent: "center", gap: 24, alignItems: "center" }}>
@@ -645,33 +664,33 @@ export default function App() {
           {capturedImg && <div style={{ ...S.card, overflow: "hidden", marginBottom: 20, height: 140 }}><img src={capturedImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div>}
           <div style={{ ...S.card, padding: 20, marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}><Ic name={editingContact ? "edit" : "zap"} size={14} color={editingContact ? T.accS : T.ok} /><span style={{ fontSize: 11, fontWeight: 700, color: editingContact ? T.accS : T.ok, textTransform: "uppercase", letterSpacing: ".06em" }}>{editingContact ? "Bearbeiten" : "AI-erkannt"}</span></div>
-            {[{ k: "name", l: "Name" }, { k: "company", l: "Firma" }, { k: "position", l: "Position" }, { k: "email", l: "Email" }, { k: "phone", l: "Telefon" }, { k: "mobile", l: "Mobil" }, { k: "website", l: "Website" }, { k: "address", l: "Adresse" }, { k: "linkedin", l: "LinkedIn" }].map((f) => (
+            {[{ k: "name", l: t("name") }, { k: "company", l: t("firma") }, { k: "position", l: t("position") }, { k: "email", l: t("email") }, { k: "phone", l: t("phone") }, { k: "mobile", l: t("mobile") }, { k: "website", l: t("website") }, { k: "address", l: t("address") }, { k: "linkedin", l: "LinkedIn" }].map((f) => (
               <div key={f.k} style={{ marginBottom: 12 }}>
                 <label style={S.label}>{f.l}</label>
                 <input type="text" value={current[f.k] || ""} onChange={(e) => upd(f.k, e.target.value)} placeholder={`${f.l}...`} style={S.input} onFocus={(e) => e.target.style.borderColor = T.acc} onBlur={(e) => e.target.style.borderColor = T.bd} />
               </div>
             ))}
-            <div><label style={S.label}>Notizen</label><textarea value={current.notes || ""} onChange={(e) => upd("notes", e.target.value)} placeholder="z.B. Interesse an Produkt X..." rows={3} style={{ ...S.input, resize: "vertical" }} onFocus={(e) => e.target.style.borderColor = T.acc} onBlur={(e) => e.target.style.borderColor = T.bd} /></div>
+            <div><label style={S.label}>Notizen</label><textarea value={current.notes || ""} onChange={(e) => upd("notes", e.target.value)} placeholder={t("notesPlaceholder")} rows={3} style={{ ...S.input, resize: "vertical" }} onFocus={(e) => e.target.style.borderColor = T.acc} onBlur={(e) => e.target.style.borderColor = T.bd} /></div>
           </div>
 
           {/* Email preview – only for new contacts */}
           {!editingContact && (
             <div style={{ ...S.card, padding: 20, marginBottom: 24 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}><Ic name="mail" size={16} color={T.accS} /><span style={{ fontSize: 13, fontWeight: 600 }}>Follow-up Email</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}><Ic name="mail" size={16} color={T.accS} /><span style={{ fontSize: 13, fontWeight: 600 }}>{t("followUpEmail")}</span></div>
               <div style={{ background: T.bg, borderRadius: 10, padding: 16, border: `1px solid ${T.bd}`, fontSize: 13, lineHeight: 1.7, color: T.txM }}>
-                <p><span style={{ color: T.txD }}>An:</span> <span style={{ color: T.tx }}>{current.email || "—"}</span></p>
-                <p><span style={{ color: T.txD }}>Betreff:</span> <span style={{ color: T.tx }}>Vielen Dank – {selectedMesse?.name} {selectedMesse?.city}</span></p>
+                <p><span style={{ color: T.txD }}>{t("to")}:</span> <span style={{ color: T.tx }}>{current.email || "—"}</span></p>
+                <p><span style={{ color: T.txD }}>{t("subject")}:</span> <span style={{ color: T.tx }}>{t("thankYou")} – {selectedMesse?.name} {selectedMesse?.city}</span></p>
                 <hr style={{ border: "none", borderTop: `1px solid ${T.bd}`, margin: "12px 0" }} />
-                <p>Sehr geehrte/r {current.name}, vielen Dank für Ihren Besuch...</p>
-                <p style={{ marginTop: 8 }}><span style={{ color: T.acc }}>→ Katalog ansehen</span></p>
-                <p style={{ marginTop: 8 }}>MfG, <span style={{ color: T.tx, fontWeight: 600 }}>{user?.displayName || user?.email}</span></p>
+                <p>{current.name}, {t("thankVisit")}</p>
+                <p style={{ marginTop: 8 }}><span style={{ color: T.acc }}>{t("viewCatalog")}</span></p>
+                <p style={{ marginTop: 8 }}>{t("bestRegards")} <span style={{ color: T.tx, fontWeight: 600 }}>{user?.displayName || user?.email}</span></p>
               </div>
             </div>
           )}
 
           {/* Delete button for existing contacts */}
           {editingContact && (
-            <button onClick={() => { if (confirm("Kontakt wirklich löschen?")) deleteContact(editingContact); }} style={{ ...S.btn("transparent", "#EF4444"), border: "1px solid rgba(239,68,68,.3)", marginBottom: 24, padding: 12, fontSize: 13, fontWeight: 600 }}>
+            <button onClick={() => { if (confirm(t("confirmDelete"))) deleteContact(editingContact); }} style={{ ...S.btn("transparent", "#EF4444"), border: "1px solid rgba(239,68,68,.3)", marginBottom: 24, padding: 12, fontSize: 13, fontWeight: 600 }}>
               Kontakt löschen
             </button>
           )}
@@ -686,7 +705,7 @@ export default function App() {
             ) : (
               <>
                 <button onClick={() => saveContact(true)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), boxShadow: `0 6px 24px rgba(43,85,151,.35)`, marginBottom: 10 }}><Ic name="check" size={18} color={T.wh} /> Speichern + Email senden</button>
-                <button onClick={() => saveContact(false)} style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}` }}>Nur speichern</button>
+                <button onClick={() => saveContact(false)} style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}` }}>{t("saveOnly")}</button>
               </>
             )}
           </div>
@@ -700,7 +719,7 @@ export default function App() {
             <button onClick={() => setView("home")} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><Ic name="back" size={22} color={T.txM} /></button>
             <h2 style={{ fontSize: 18, fontWeight: 700, flex: 1 }}>Meine Kontakte <span style={{ fontSize: 13, color: T.txM, fontWeight: 400 }}>({contacts.length})</span></h2>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, ...S.card, padding: "10px 16px", marginBottom: 20 }}><Ic name="search" size={16} color={T.txD} /><input type="text" placeholder="Suchen..." value={searchQ} onChange={(e) => setSearchQ(e.target.value)} style={{ flex: 1, background: "none", border: "none", color: T.tx, fontSize: 14, outline: "none" }} /></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, ...S.card, padding: "10px 16px", marginBottom: 20 }}><Ic name="search" size={16} color={T.txD} /><input type="text" placeholder={t("search")} value={searchQ} onChange={(e) => setSearchQ(e.target.value)} style={{ flex: 1, background: "none", border: "none", color: T.tx, fontSize: 14, outline: "none" }} /></div>
           {filtered.map((c, i) => (
             <div key={c.id} onClick={() => startEditing(c)} style={{ ...S.card, padding: 16, marginBottom: 8, animation: `slideUp .3s ease ${i * .03}s both`, cursor: "pointer", transition: "border-color .2s" }}
               onMouseOver={(e) => e.currentTarget.style.borderColor = T.acc + "66"}
@@ -725,7 +744,7 @@ export default function App() {
               </div>
             </div>
           ))}
-          {filtered.length === 0 && <p style={{ textAlign: "center", color: T.txM, padding: 40, fontSize: 14 }}>{searchQ ? "Keine Ergebnisse" : "Noch keine Kontakte"}</p>}
+          {filtered.length === 0 && <p style={{ textAlign: "center", color: T.txM, padding: 40, fontSize: 14 }}>{searchQ ? t("noResults") : "Noch keine Kontakte"}</p>}
           {contacts.length > 0 && <button onClick={exportCSV} style={{ ...S.btn(T.sf, T.tx), border: `1px solid ${T.bd}`, marginTop: 16, fontSize: 14, fontWeight: 600 }}><Ic name="download" size={16} color={T.acc} /> CSV exportieren</button>}
         </div>
       )}
@@ -735,33 +754,52 @@ export default function App() {
         <div style={{ padding: "20px 20px 110px", animation: "fadeIn .3s" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
             <button onClick={() => setView("home")} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><Ic name="back" size={22} color={T.txM} /></button>
-            <h2 style={{ fontSize: 18, fontWeight: 700 }}>Einstellungen</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 700 }}>{t("settings")}</h2>
+          </div>
+
+          {/* Language */}
+          <div style={{ ...S.card, padding: 20, marginBottom: 14 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>{t("language")}</h3>
+            <div style={{ display: "flex", gap: 8 }}>
+              {[{ code: "de", flag: "🇩🇪", label: "Deutsch" }, { code: "tr", flag: "🇹🇷", label: "Türkçe" }, { code: "en", flag: "🇬🇧", label: "English" }].map((l) => (
+                <button key={l.code} onClick={() => setLang(l.code)} style={{
+                  flex: 1, padding: "12px 8px", borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  background: lang === l.code ? T.accG : T.bg,
+                  border: `1px solid ${lang === l.code ? T.acc : T.bd}`,
+                  color: lang === l.code ? T.tx : T.txM,
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                }}>
+                  <span style={{ fontSize: 20 }}>{l.flag}</span>
+                  {l.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Account */}
           <div style={{ ...S.card, padding: 20, marginBottom: 14 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>Konto</h3>
+            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>{t("account")}</h3>
             <p style={{ fontSize: 14, color: T.tx, marginBottom: 4 }}>{user?.displayName}</p>
             <p style={{ fontSize: 13, color: T.txM, marginBottom: 16 }}>{user?.email}</p>
-            <button onClick={handleLogout} style={{ ...S.btn("transparent", T.acc), border: `1px solid ${T.acc}33`, padding: 12, fontSize: 13, fontWeight: 600 }}><Ic name="logout" size={16} color={T.acc} /> Abmelden</button>
+            <button onClick={handleLogout} style={{ ...S.btn("transparent", T.acc), border: `1px solid ${T.acc}33`, padding: 12, fontSize: 13, fontWeight: 600 }}><Ic name="logout" size={16} color={T.acc} />  {t("logout")}</button>
           </div>
 
           {/* Messe */}
           <div style={{ ...S.card, padding: 20, marginBottom: 14 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>Aktuelle Messe</h3>
+            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>{t("currentMesse")}</h3>
             <p style={{ fontSize: 14, color: T.accS, fontWeight: 500 }}>{selectedMesse?.name} – {selectedMesse?.city}</p>
-            <button onClick={() => setSelectedMesse(null)} style={{ ...S.btn(T.sf2, T.txM), border: `1px solid ${T.bd}`, padding: 12, fontSize: 13, fontWeight: 600, marginTop: 14 }}>Messe wechseln</button>
+            <button onClick={() => setSelectedMesse(null)} style={{ ...S.btn(T.sf2, T.txM), border: `1px solid ${T.bd}`, padding: 12, fontSize: 13, fontWeight: 600, marginTop: 14 }}>{t("changeMesse")}</button>
           </div>
 
           {/* Email / SMTP Setup */}
           <div style={{ ...S.card, padding: 20, marginBottom: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700 }}>Email-Versand</h3>
-              {smtpSaved && <span style={{ fontSize: 10, fontWeight: 600, color: T.ok, background: T.okG, padding: "3px 10px", borderRadius: 6 }}>✓ Eingerichtet</span>}
+              <h3 style={{ fontSize: 14, fontWeight: 700 }}>{t("emailSetup")}</h3>
+              {smtpSaved && <span style={{ fontSize: 10, fontWeight: 600, color: T.ok, background: T.okG, padding: "3px 10px", borderRadius: 6 }}>{t("configured")}</span>}
             </div>
 
             {/* Preset buttons */}
-            <label style={S.label}>Email-Anbieter</label>
+            <label style={S.label}>{t("emailProvider")}</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
               {SMTP_PRESETS.map((p) => (
                 <button key={p.label} onClick={() => setSmtp((s) => ({ ...s, smtpHost: p.host, smtpPort: p.port }))}
@@ -777,12 +815,12 @@ export default function App() {
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <label style={S.label}>SMTP Server</label>
+              <label style={S.label}>{t("smtpServer")}</label>
               <input type="text" value={smtp.smtpHost} onChange={(e) => setSmtp((s) => ({ ...s, smtpHost: e.target.value }))} placeholder="smtp.gmail.com" style={S.input} />
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <label style={S.label}>Port</label>
+              <label style={S.label}>{t("port")}</label>
               <input type="text" value={smtp.smtpPort} onChange={(e) => setSmtp((s) => ({ ...s, smtpPort: e.target.value }))} placeholder="465" style={S.input} />
             </div>
 
@@ -815,20 +853,20 @@ export default function App() {
 
             {/* Save + Test buttons */}
             <button onClick={async () => {
-              if (!smtp.smtpHost || !smtp.smtpUser || !smtp.smtpPass) { notify("Bitte alle Felder ausfüllen", "error"); return; }
+              if (!smtp.smtpHost || !smtp.smtpUser || !smtp.smtpPass) { notify(t("fillAllFields"), "error"); return; }
               try {
                 const { setDoc, doc: fbDoc } = await import("firebase/firestore");
                 const { db: fbDb } = await import("./firebase.js");
                 await setDoc(fbDoc(fbDb, "userSettings", user.uid), { smtp, updatedAt: new Date().toISOString() }, { merge: true });
                 setSmtpSaved(true);
-                notify("SMTP-Einstellungen gespeichert!");
+                notify(t("smtpSaved"));
               } catch (e) { notify("Speichern fehlgeschlagen: " + e.message, "error"); }
             }} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), marginBottom: 10, boxShadow: `0 4px 16px rgba(43,85,151,.25)` }}>
               Speichern
             </button>
 
             <button onClick={async () => {
-              if (!smtp.smtpHost || !smtp.smtpUser || !smtp.smtpPass) { notify("Erst SMTP-Daten eingeben", "error"); return; }
+              if (!smtp.smtpHost || !smtp.smtpUser || !smtp.smtpPass) { notify(t("enterSmtpFirst"), "error"); return; }
               setSmtpTesting(true);
               const testTo = smtp.smtpFrom || smtp.smtpUser;
               const lang = await sendEmail(testTo, "Test", "Test-Messe", user?.displayName || "Test", smtp);
@@ -847,9 +885,9 @@ export default function App() {
       {user && selectedMesse && view !== "scan" && (
         <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", maxWidth: 480, width: "100%", background: T.sf, borderTop: `1px solid ${T.bd}`, display: "flex", justifyContent: "space-around", padding: "12px 0 28px", zIndex: 100 }}>
           {[
-            { id: "home", i: "camera", l: "Scan" },
-            { id: "contacts", i: "users", l: "Kontakte" },
-            { id: "settings", i: "db", l: "Setup" },
+            { id: "home", i: "camera", l: t("navScan") },
+            { id: "contacts", i: "users", l: t("navContacts") },
+            { id: "settings", i: "db", l: t("navSetup") },
           ].map((nav) => (
             <button key={nav.id} onClick={() => setView(nav.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "4px 20px" }}>
               <Ic name={nav.i} size={20} color={view === nav.id ? T.acc : T.txD} />
