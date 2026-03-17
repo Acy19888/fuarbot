@@ -3,7 +3,7 @@ import {
   saveContactToFirebase, subscribeToContacts, isFirebaseConfigured,
   updateContactInFirebase, deleteContactFromFirebase,
   loginUser, registerUser, logoutUser, onAuthChange,
-  saveUserSettings, getUserSettings,
+  saveUserSettings, getUserSettings, addTimelineEvent, syncToCrm
 } from "./firebase.js";
 import { detectSystemLanguage, useTranslation } from "./i18n.js";
 
@@ -64,13 +64,15 @@ async function sendEmail(to, contactName, messeName, salesPerson, smtp) {
         smtpUser: smtp.smtpUser, smtpPass: smtp.smtpPass,
         smtpFrom: smtp.smtpFrom || smtp.smtpUser,
         companyName: smtp.companyName, catalogUrl: smtp.catalogUrl,
+        emailSignature: smtp.emailSignature || "",
       }),
     });
     const data = await res.json();
-    if (data.success) return data.language || "en";
-    return null;
-  } catch { return null; }
+    if (data.success) return { success: true, language: data.language || "en", htmlBody: data.htmlBody };
+    return { success: false, error: data.message || data.error || "Unbekannter Fehler" };
+  } catch (err) { return { success: false, error: err.message }; }
 }
+
 
 const LANG_LABELS = { de: "Deutsch", tr: "Türkçe", en: "English", es: "Español", fr: "Français", it: "Italiano" };
 
@@ -230,7 +232,7 @@ export default function App() {
   const [selectedMesse, setSelectedMesse] = useState(null);
 
   // SMTP settings per user (stored in Firebase under users/{uid}/settings)
-  const [smtp, setSmtp] = useState({ smtpHost: "", smtpPort: "465", smtpUser: "", smtpPass: "", smtpFrom: "", companyName: "Windoform", catalogUrl: "https://windoform.de" });
+  const [smtp, setSmtp] = useState({ smtpHost: "", smtpPort: "465", smtpUser: "", smtpPass: "", smtpFrom: "", companyName: "Windoform", catalogUrl: "https://windoform.de", emailSignature: "" });
   const [smtpSaved, setSmtpSaved] = useState(false);
   const [smtpTesting, setSmtpTesting] = useState(false);
 
@@ -258,6 +260,8 @@ export default function App() {
   const [demoMode, setDemoMode] = useState(false);
   const [editingContact, setEditingContact] = useState(null); // for editing existing contacts
   const [showDupeWarning, setShowDupeWarning] = useState(null);
+  const [selectedContact, setSelectedContact] = useState(null); // for detail view
+  const [viewingEmail, setViewingEmail] = useState(null); // stores html string to preview
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -428,23 +432,34 @@ export default function App() {
     const contactData = { ...enriched, emailSent: false, whatsappSent: false, savedAt: new Date().toISOString() };
 
     // If editing existing contact, update instead of create
+    let savedId = editingContact?.id;
     if (editingContact) {
       await updateContactInFirebase(editingContact.id, contactData);
       notify(t("contactUpdated"));
+      // Record edit event
+      addTimelineEvent(editingContact.id, { type: "edit", label: "Kontakt bearbeitet", icon: "edit" });
+      await syncToCrm(editingContact.id, contactData, user, selectedMesse?.name ? `${selectedMesse.name} ${selectedMesse.city || ""}`.trim() : "");
     } else {
-      await saveContactToFirebase(contactData);
+      savedId = await saveContactToFirebase(contactData);
+      // Record scan event on first save
+      if (savedId) {
+        addTimelineEvent(savedId, { type: "scanned", label: "Visitenkarte gescannt", icon: "camera", messe: selectedMesse?.name + " " + selectedMesse?.city, scannedBy: user?.displayName || user?.email });
+        await syncToCrm(savedId, contactData, user, selectedMesse?.name ? `${selectedMesse.name} ${selectedMesse.city || ""}`.trim() : "");
+      }
     }
 
     if (withContact) {
       // 1. Always send email if address exists
       if (enriched.email) {
-        const lang = await sendEmail(enriched.email, enriched.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp);
-        if (lang) {
+        const emailResult = await sendEmail(enriched.email, enriched.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp);
+        if (emailResult && emailResult.success) {
           contactData.emailSent = true;
           setEmailSent(true);
           setTimeout(() => setEmailSent(false), 2500);
+          // Record email event
+          if (savedId) addTimelineEvent(savedId, { type: "email", label: "Email gesendet", icon: "mail", to: enriched.email, htmlBody: emailResult.htmlBody });
         } else {
-          notify(smtpSaved ? t("emailFailed") : t("setupEmailFirst"), "error");
+          notify(emailResult?.error || (smtpSaved ? t("emailFailed") : t("setupEmailFirst")), "error");
         }
       }
 
@@ -455,6 +470,8 @@ export default function App() {
         const catalog = smtp.catalogUrl || "https://windoform.de";
         const message = getWhatsAppMessage(contactLang, enriched.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, catalog);
         contactData.whatsappSent = true;
+        // Record WhatsApp event
+        if (savedId) addTimelineEvent(savedId, { type: "whatsapp", label: "WhatsApp geöffnet", icon: "whatsapp", phone: waPhone });
 
         // Small delay so user sees email notification first
         setTimeout(() => {
@@ -477,6 +494,7 @@ export default function App() {
 
     setCurrent(null); setCapturedImg(null); setEditingContact(null); setShowDupeWarning(null); setView("home");
   };
+
 
   // ---- EDIT ----
   const startEditing = (contact) => {
@@ -571,6 +589,25 @@ export default function App() {
             <button onClick={() => { setShowDupeWarning(null); }} style={{ ...S.btn("transparent", T.txM), fontSize: 13, padding: 14 }}>
               Abbrechen
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Email Viewer Modal */}
+      {viewingEmail && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(11,14,20,.92)", backdropFilter: "blur(12px)", padding: 20 }}>
+          <div style={{ ...S.card, width: "100%", maxWidth: 600, height: "calc(100vh - 40px)", display: "flex", flexDirection: "column", animation: "slideUp .3s ease", overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.bd}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: T.sf }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700 }}>Gesendete E-Mail</h3>
+              <button onClick={() => setViewingEmail(null)} style={{ background: "none", border: "none", color: T.txM, fontSize: 24, cursor: "pointer", lineHeight: 1 }}>&times;</button>
+            </div>
+            <div style={{ flex: 1, background: "#fff" }}>
+              <iframe
+                srcDoc={viewingEmail}
+                style={{ width: "100%", height: "100%", border: "none" }}
+                title="Email Preview"
+              />
+            </div>
           </div>
         </div>
       )}
@@ -867,7 +904,7 @@ export default function App() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, ...S.card, padding: "10px 16px", marginBottom: 20 }}><Ic name="search" size={16} color={T.txD} /><input type="text" placeholder={t("search")} value={searchQ} onChange={(e) => setSearchQ(e.target.value)} style={{ flex: 1, background: "none", border: "none", color: T.tx, fontSize: 14, outline: "none" }} /></div>
           {filtered.map((c, i) => (
-            <div key={c.id} onClick={() => startEditing(c)} style={{ ...S.card, padding: 16, marginBottom: 8, animation: `slideUp .3s ease ${i * .03}s both`, cursor: "pointer", transition: "border-color .2s" }}
+            <div key={c.id} onClick={() => { setSelectedContact(c); setView("contactDetail"); }} style={{ ...S.card, padding: 16, marginBottom: 8, animation: `slideUp .3s ease ${i * .03}s both`, cursor: "pointer", transition: "border-color .2s" }}
               onMouseOver={(e) => e.currentTarget.style.borderColor = T.acc + "66"}
               onMouseOut={(e) => e.currentTarget.style.borderColor = T.bd}
             >
@@ -894,6 +931,136 @@ export default function App() {
           {contacts.length > 0 && <button onClick={exportCSV} style={{ ...S.btn(T.sf, T.tx), border: `1px solid ${T.bd}`, marginTop: 16, fontSize: 14, fontWeight: 600 }}><Ic name="download" size={16} color={T.acc} /> CSV exportieren</button>}
         </div>
       )}
+
+      {/* ============ CONTACT DETAIL ============ */}
+      {view === "contactDetail" && selectedContact && (() => {
+        const c = selectedContact;
+        const waPhone = getBestWhatsAppNumber(c);
+        const timeline = [...(c.timeline || [])].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        const tlIconColor = { scanned: T.acc, email: T.ok, whatsapp: "#25D366", edit: T.warn };
+        const tlBg = { scanned: T.accG, email: T.okG, whatsapp: "rgba(37,211,102,.12)", edit: "rgba(251,191,36,.12)" };
+        return (
+          <div style={{ padding: "20px 20px 110px", animation: "fadeIn .3s" }}>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+              <button onClick={() => setView("contacts")} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><Ic name="back" size={22} color={T.txM} /></button>
+              <h2 style={{ fontSize: 18, fontWeight: 700 }}>Kontakt</h2>
+            </div>
+
+            {/* Avatar + Info */}
+            <div style={{ ...S.card, padding: 24, marginBottom: 14, textAlign: "center" }}>
+              <div style={{ width: 72, height: 72, borderRadius: 20, background: `linear-gradient(135deg,${T.acc},#1E4080)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, color: T.wh, margin: "0 auto 16px", boxShadow: `0 8px 24px rgba(43,85,151,.35)` }}>
+                {c.name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+              </div>
+              <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>{c.name}</h3>
+              {c.position && <p style={{ fontSize: 13, color: T.accS, fontWeight: 600, marginBottom: 2 }}>{c.position}</p>}
+              {c.company && <p style={{ fontSize: 14, color: T.txM, marginBottom: 12 }}>{c.company}</p>}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, textAlign: "left" }}>
+                {c.email && <div style={{ display: "flex", gap: 10, alignItems: "center" }}><Ic name="mail" size={14} color={T.txD} /><span style={{ fontSize: 13, color: T.txM }}>{c.email}</span></div>}
+                {(c.phone || c.mobile) && <div style={{ display: "flex", gap: 10, alignItems: "center" }}><Ic name="phone" size={14} color={T.txD} /><span style={{ fontSize: 13, color: T.txM }}>{c.mobile || c.phone}</span></div>}
+                {c.website && <div style={{ display: "flex", gap: 10, alignItems: "center" }}><Ic name="globe" size={14} color={T.txD} /><span style={{ fontSize: 13, color: T.txM }}>{c.website}</span></div>}
+                {c.address && <div style={{ display: "flex", gap: 10, alignItems: "center" }}><Ic name="map" size={14} color={T.txD} /><span style={{ fontSize: 13, color: T.txM }}>{c.address}</span></div>}
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
+              {c.email && <button onClick={async () => {
+                const emailResult = await sendEmail(c.email, c.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp);
+                if (emailResult && emailResult.success) { addTimelineEvent(c.id, { type: "email", label: "Email gesendet", icon: "mail", to: c.email, htmlBody: emailResult.htmlBody }); notify("Email gesendet!"); }
+                else notify(emailResult?.error || t("emailFailed"), "error");
+              }} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid ${T.bd}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: T.sf }}>
+                <Ic name="mail" size={20} color={T.ok} />
+                <span style={{ fontSize: 11, color: T.txM, fontWeight: 600 }}>Email</span>
+              </button>}
+              {waPhone && <button onClick={() => {
+                const cl = detectContactLang(c.email, c.name);
+                const msg = getWhatsAppMessage(cl, c.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp.catalogUrl || "https://windoform.de");
+                addTimelineEvent(c.id, { type: "whatsapp", label: "WhatsApp geöffnet", icon: "whatsapp", phone: waPhone });
+                openWhatsApp(waPhone, msg); notify(t("whatsappCopied"));
+              }} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid ${T.bd}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: T.sf }}>
+                <Ic name="whatsapp" size={20} color="#25D366" />
+                <span style={{ fontSize: 11, color: T.txM, fontWeight: 600 }}>WhatsApp</span>
+              </button>}
+              <button onClick={() => startEditing(c)} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid ${T.bd}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: T.sf }}>
+                <Ic name="edit" size={20} color={T.accS} />
+                <span style={{ fontSize: 11, color: T.txM, fontWeight: 600 }}>Bearbeiten</span>
+              </button>
+            </div>
+
+            {/* Notes */}
+            {c.notes && <div style={{ ...S.card, padding: 16, marginBottom: 14 }}>
+              <p style={{ fontSize: 11, color: T.txM, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 }}>Notizen</p>
+              <p style={{ fontSize: 14, color: T.tx, lineHeight: 1.6, fontStyle: "italic" }}>{c.notes}</p>
+            </div>}
+
+            {/* Timeline */}
+            <div style={{ ...S.card, padding: 20, marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+                <Ic name="clock" size={16} color={T.accS} />
+                <h3 style={{ fontSize: 14, fontWeight: 700 }}>Aktivitäten</h3>
+              </div>
+              {timeline.length === 0 && <p style={{ fontSize: 13, color: T.txD, textAlign: "center", padding: "12px 0" }}>Noch keine Aktivitäten</p>}
+              {timeline.map((ev, idx) => {
+                const isEmail = ev.type === "email";
+                const hasHtml = !!ev.htmlBody;
+                const canClick = isEmail;
+                return (
+                  <div key={idx} 
+                       onClick={() => {
+                         if (!canClick) return;
+                         if (hasHtml) {
+                           setViewingEmail(ev.htmlBody);
+                         } else {
+                           // Fallback for old emails
+                           const fallback = `<html><body style="font-family:sans-serif;padding:30px;color:#333;line-height:1.6;max-width:600px;margin:0 auto;">
+                             <h2 style="margin-top:0;">E-Mail Vorschau nicht verfügbar</h2>
+                             <p>Hier stand die E-Mail an <b>${c.name}</b> bezüglich <b>${ev.messe || selectedMesse?.name || "der Messe"}</b>.</p>
+                             <p style="color:#666;background:#f5f5f5;padding:16px;border-radius:8px;font-size:14px;margin-top:24px;">
+                               <i>Hinweis: Der genaue HTML-Code dieser E-Mail wurde damals nicht in der Datenbank gespeichert, da diese Funktion erst später hinzugefügt wurde. Ab sofort werden alle neuen E-Mails hier originalgetreu angezeigt!</i>
+                             </p>
+                           </body></html>`;
+                           setViewingEmail(fallback);
+                         }
+                       }}
+                       style={{ 
+                         display: "flex", gap: 14, position: "relative", paddingBottom: idx < timeline.length - 1 ? 20 : 0,
+                         cursor: canClick ? "pointer" : "default",
+                         opacity: 1, transition: "opacity 0.2s"
+                       }}
+                       onMouseOver={(e) => { if (canClick) e.currentTarget.style.opacity = 0.7; }}
+                       onMouseOut={(e) => { if (canClick) e.currentTarget.style.opacity = 1; }}
+                  >
+                  {/* Vertical line */}
+                  {idx < timeline.length - 1 && <div style={{ position: "absolute", left: 15, top: 32, bottom: 0, width: 2, background: T.bd }} />}
+                  {/* Icon */}
+                  <div style={{ width: 32, height: 32, borderRadius: 10, flexShrink: 0, background: tlBg[ev.type] || T.accG, border: `1px solid ${tlIconColor[ev.type] || T.acc}33`, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
+                    <Ic name={ev.icon || "clock"} size={14} color={tlIconColor[ev.type] || T.acc} />
+                  </div>
+                  {/* Text */}
+                  <div style={{ flex: 1, paddingTop: 4 }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: canClick ? T.acc : T.tx, marginBottom: 2 }}>{ev.label}</p>
+                    {ev.messe && <p style={{ fontSize: 11, color: T.accS }}>{ev.messe}</p>}
+                    {ev.to && <p style={{ fontSize: 11, color: T.txD }}>{ev.to}</p>}
+                    {ev.phone && <p style={{ fontSize: 11, color: T.txD }}>{ev.phone}</p>}
+                    {ev.scannedBy && <p style={{ fontSize: 11, color: T.txD }}>von {ev.scannedBy}</p>}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
+                      <p style={{ fontSize: 11, color: T.txD }}>
+                        {new Date(ev.timestamp).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })} · {new Date(ev.timestamp).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                      {isEmail && (
+                        <button style={{ background: "none", border: "none", color: hasHtml ? T.accS : T.txD, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                          <Ic name="mail" size={12} color={hasHtml ? T.accS : T.txD} /> {hasHtml ? "Mail ansehen" : "Info"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )})}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ============ SETTINGS ============ */}
       {view === "settings" && (
@@ -992,9 +1159,23 @@ export default function App() {
               <input type="text" value={smtp.companyName} onChange={(e) => setSmtp((s) => ({ ...s, companyName: e.target.value }))} placeholder="Windoform" style={S.input} />
             </div>
 
-            <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 12 }}>
               <label style={S.label}>{t("catalogUrl")}</label>
               <input type="url" value={smtp.catalogUrl} onChange={(e) => setSmtp((s) => ({ ...s, catalogUrl: e.target.value }))} placeholder="https://windoform.de/katalog" style={S.input} />
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={S.label}>E-Mail Signatur</label>
+              <textarea
+                value={smtp.emailSignature || ""}
+                onChange={(e) => setSmtp((s) => ({ ...s, emailSignature: e.target.value }))}
+                placeholder={`Freundliche Grüße,\nMax Mustermann\nWindoform GmbH\nTel: +49 123 456789`}
+                rows={5}
+                style={{ ...S.input, resize: "vertical", lineHeight: 1.6 }}
+                onFocus={(e) => e.target.style.borderColor = T.acc}
+                onBlur={(e) => e.target.style.borderColor = T.bd}
+              />
+              <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>Wird automatisch am Ende jeder E-Mail angehängt</p>
             </div>
 
             {/* Save + Test buttons */}
@@ -1015,10 +1196,10 @@ export default function App() {
               if (!smtp.smtpHost || !smtp.smtpUser || !smtp.smtpPass) { notify(t("enterSmtpFirst"), "error"); return; }
               setSmtpTesting(true);
               const testTo = smtp.smtpFrom || smtp.smtpUser;
-              const lang = await sendEmail(testTo, "Test", "Test-Messe", user?.displayName || "Test", smtp);
+              const result = await sendEmail(testTo, "Test", "Test-Messe", user?.displayName || "Test", smtp);
               setSmtpTesting(false);
-              if (lang) notify(t("testSentTo") + " " +  + testTo + "!");
-              else notify(t("testFailed"), "error");
+              if (result && result.success) notify(t("testSentTo") + " " + testTo + "!");
+              else notify(result?.error || t("testFailed"), "error");
             }} disabled={smtpTesting} style={{ ...S.btn(T.sf2, T.txM), border: `1px solid ${T.bd}`, padding: 12, fontSize: 13, fontWeight: 600, opacity: smtpTesting ? .6 : 1 }}>
               <Ic name="mail" size={14} color={T.txM} />
               {smtpTesting ? t("sendingTest") : t("sendTestEmail")}
@@ -1036,8 +1217,8 @@ export default function App() {
             { id: "settings", i: "db", l: t("navSetup") },
           ].map((nav) => (
             <button key={nav.id} onClick={() => setView(nav.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "4px 20px" }}>
-              <Ic name={nav.i} size={20} color={view === nav.id ? T.acc : T.txD} />
-              <span style={{ fontSize: 10, fontWeight: 600, color: view === nav.id ? T.acc : T.txD, textTransform: "uppercase", letterSpacing: ".05em" }}>{nav.l}</span>
+              <Ic name={nav.i} size={20} color={(view === nav.id || (nav.id === "contacts" && view === "contactDetail")) ? T.acc : T.txD} />
+              <span style={{ fontSize: 10, fontWeight: 600, color: (view === nav.id || (nav.id === "contacts" && view === "contactDetail")) ? T.acc : T.txD, textTransform: "uppercase", letterSpacing: ".05em" }}>{nav.l}</span>
             </button>
           ))}
         </div>

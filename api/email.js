@@ -125,7 +125,7 @@ export default async function handler(req, res) {
     const {
       to, contactName, messeName, salesPerson,
       smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom,
-      companyName, catalogUrl,
+      companyName, catalogUrl, emailSignature,
     } = req.body;
 
     if (!to || !contactName) return res.status(400).json({ error: "Missing: to, contactName" });
@@ -170,6 +170,7 @@ ${t.cta}
 <p style="font-size:15px;color:#555;line-height:1.7;margin:24px 0 0;">${t.closing}</p>
 <p style="font-size:16px;color:#333;font-weight:600;margin:8px 0 0;">${salesPerson || "—"}</p>
 <p style="font-size:14px;color:#888;margin:4px 0 0;">${company}</p>
+${emailSignature ? `<div style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;font-size:13px;color:#777;line-height:1.7;white-space:pre-line;">${emailSignature}</div>` : ""}
 </div>
 <div style="background:#f8f8f8;padding:20px 40px;border-top:1px solid #eee;">
 <p style="font-size:12px;color:#999;margin:0;text-align:center;">${t.footer}</p>
@@ -184,7 +185,7 @@ ${t.cta}
       html: htmlBody,
     });
 
-    return res.status(200).json({ success: true, messageId: info.messageId, language: lang });
+    return res.status(200).json({ success: true, messageId: info.messageId, language: lang, htmlBody });
 
   } catch (err) {
     console.error("Email error:", err.message);

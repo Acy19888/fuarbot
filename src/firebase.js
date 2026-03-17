@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, query, orderBy, where, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, query, orderBy, where, onSnapshot, doc, updateDoc, deleteDoc, arrayUnion } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 
 const firebaseConfig = {
@@ -87,6 +87,62 @@ export async function deleteContactFromFirebase(id) {
   if (!db) return;
   await deleteDoc(doc(db, "contacts", id));
 }
+
+export async function addTimelineEvent(contactId, event) {
+  if (!db) return;
+  try {
+    const timestamp = new Date().toISOString();
+    await updateDoc(doc(db, "contacts", contactId), {
+      timeline: arrayUnion({ ...event, timestamp }),
+    });
+
+    // CRM Integration: Sync timeline event to crm_activities
+    if (auth.currentUser) {
+      const typeMap = { scanned: "note", edit: "status", email: "email", whatsapp: "note" };
+      let text = event.label;
+      if (event.to) text += ` (An: ${event.to})`;
+      if (event.phone) text += ` (Tel: ${event.phone})`;
+  
+      await addDoc(collection(db, "crm_activities"), {
+        parentId: contactId,
+        parentType: "kunde",
+        type: typeMap[event.type] || "note",
+        text: text,
+        createdBy: auth.currentUser.displayName || auth.currentUser.email || "Fuarbot",
+        createdByUid: auth.currentUser.uid,
+        createdAt: timestamp
+      });
+    }
+  } catch (err) {
+    console.error("Timeline event error:", err);
+  }
+}
+
+// ---- CRM Integration Helpers ----
+export async function syncToCrm(contactId, contactData, user, messeName) {
+  if (!db) return;
+  try {
+    const { setDoc } = await import("firebase/firestore");
+    const crmData = {
+      name: contactData.name || "",
+      company: contactData.company || "",
+      position: contactData.position || "",
+      email: contactData.email || "",
+      phone: contactData.phone || "",
+      mobile: contactData.mobile || "",
+      website: contactData.website || "",
+      address: contactData.address || "",
+      notes: contactData.notes || "",
+      source: messeName ? `Fuarbot: ${messeName}` : "Fuarbot",
+      status: "new",
+      updatedAt: new Date().toISOString()
+    };
+    await setDoc(doc(db, "crm_customers", contactId), crmData, { merge: true });
+  } catch (err) {
+    console.error("CRM sync error:", err);
+  }
+}
+
 
 export function isFirebaseConfigured() { return !!db; }
 
