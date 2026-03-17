@@ -125,7 +125,7 @@ export default async function handler(req, res) {
     const {
       to, contactName, messeName, salesPerson,
       smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom,
-      companyName, catalogUrl, emailSignature,
+      companyName, catalogUrl, emailSignature, avatar
     } = req.body;
 
     if (!to || !contactName) return res.status(400).json({ error: "Missing: to, contactName" });
@@ -168,9 +168,21 @@ ${t.cta}
 </div>
 <p style="font-size:15px;color:#555;line-height:1.7;margin:0 0 16px;">${t.body3}</p>
 <p style="font-size:15px;color:#555;line-height:1.7;margin:24px 0 0;">${t.closing}</p>
+${(emailSignature || avatar) ? `
+<table style="margin-top:24px;border-top:1px solid #eee;padding-top:20px;width:100%;border-collapse:collapse;">
+  <tr>
+    ${avatar ? `<td style="width:70px;vertical-align:top;padding:0;"><img src="${avatar}" style="width:60px;height:60px;border-radius:50%;display:block;margin-right:12px;" alt="" /></td>` : ""}
+    <td style="vertical-align:top;padding:0;">
+      <p style="margin:0;font-size:15px;font-weight:600;color:#333;">${salesPerson || "—"}</p>
+      <p style="margin:2px 0 0;font-size:13px;color:#888;">${company}</p>
+      ${emailSignature ? `<div style="margin-top:8px;font-size:13px;color:#777;line-height:1.6;white-space:pre-line;">${emailSignature}</div>` : ""}
+    </td>
+  </tr>
+</table>
+` : `
 <p style="font-size:16px;color:#333;font-weight:600;margin:8px 0 0;">${salesPerson || "—"}</p>
 <p style="font-size:14px;color:#888;margin:4px 0 0;">${company}</p>
-${emailSignature ? `<div style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;font-size:13px;color:#777;line-height:1.7;white-space:pre-line;">${emailSignature}</div>` : ""}
+`}
 </div>
 <div style="background:#f8f8f8;padding:20px 40px;border-top:1px solid #eee;">
 <p style="font-size:12px;color:#999;margin:0;text-align:center;">${t.footer}</p>

@@ -65,6 +65,7 @@ async function sendEmail(to, contactName, messeName, salesPerson, smtp) {
         smtpFrom: smtp.smtpFrom || smtp.smtpUser,
         companyName: smtp.companyName, catalogUrl: smtp.catalogUrl,
         emailSignature: smtp.emailSignature || "",
+        avatar: smtp.avatar || "",
       }),
     });
     const data = await res.json();
@@ -1165,6 +1166,48 @@ export default function App() {
             </div>
 
             <div style={{ marginBottom: 20 }}>
+              <label style={S.label}>E-Mail Profilbild (Avatar)</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                {smtp.avatar ? (
+                  <div style={{ position: "relative" }}>
+                    <img src={smtp.avatar} alt="Avatar" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: `2px solid ${T.acc}` }} />
+                    <button onClick={() => setSmtp((s) => ({ ...s, avatar: null }))} style={{ position: "absolute", top: -4, right: -4, background: T.err, color: T.wh, border: "none", borderRadius: "50%", width: 20, height: 20, fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                  </div>
+                ) : (
+                  <div style={{ width: 64, height: 64, borderRadius: "50%", background: T.bg, border: `1px dashed ${T.bd}`, display: "flex", alignItems: "center", justifyContent: "center", color: T.txD }}>
+                    <Ic name="camera" size={24} color={T.txD} />
+                  </div>
+                )}
+                <div>
+                  <input type="file" accept="image/*" id="avatarUpload" style={{ display: "none" }} onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      const img = new Image();
+                      img.onload = () => {
+                        const canvas = document.createElement("canvas");
+                        canvas.width = 120; canvas.height = 120;
+                        const ctx = canvas.getContext("2d");
+                        const sSize = Math.min(img.width, img.height);
+                        const sx = (img.width - sSize) / 2;
+                        const sy = (img.height - sSize) / 2;
+                        ctx.drawImage(img, sx, sy, sSize, sSize, 0, 0, 120, 120);
+                        setSmtp((s) => ({ ...s, avatar: canvas.toDataURL("image/jpeg", 0.85) }));
+                      };
+                      img.src = ev.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                  }} />
+                  <button onClick={() => document.getElementById("avatarUpload").click()} style={{ ...S.btn(T.sf, T.txM), fontSize: 12, padding: "6px 14px", border: `1px solid ${T.bd}` }}>
+                    {smtp.avatar ? "Bild ändern" : "Bild hochladen"}
+                  </button>
+                  <p style={{ fontSize: 11, color: T.txD, marginTop: 6, marginBottom: 0 }}>Wird links neben deiner Signatur angezeigt.</p>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
               <label style={S.label}>E-Mail Signatur</label>
               <textarea
                 value={smtp.emailSignature || ""}
@@ -1175,7 +1218,7 @@ export default function App() {
                 onFocus={(e) => e.target.style.borderColor = T.acc}
                 onBlur={(e) => e.target.style.borderColor = T.bd}
               />
-              <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>Wird automatisch am Ende jeder E-Mail angehängt</p>
+              <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>Wird automatisch am Ende jeder E-Mail als deine Signatur eingefügt.</p>
             </div>
 
             {/* Save + Test buttons */}
