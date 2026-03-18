@@ -173,9 +173,11 @@ ${(emailSignature || avatar) ? `
   <tr>
     ${avatar ? `<td style="width:70px;vertical-align:top;padding:0;"><img src="${avatar}" style="width:60px;height:60px;border-radius:50%;display:block;margin-right:12px;" alt="" /></td>` : ""}
     <td style="vertical-align:top;padding:0;">
+      ${!emailSignature ? `
       <p style="margin:0;font-size:15px;font-weight:600;color:#333;">${salesPerson || "—"}</p>
       <p style="margin:2px 0 0;font-size:13px;color:#888;">${company}</p>
-      ${emailSignature ? `<div style="margin-top:8px;font-size:13px;color:#777;line-height:1.6;white-space:pre-line;">${emailSignature}</div>` : ""}
+      ` : ""}
+      ${emailSignature ? `<div style="font-size:13px;color:#777;line-height:1.6;white-space:pre-line;">${emailSignature}</div>` : ""}
     </td>
   </tr>
 </table>
