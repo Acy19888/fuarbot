@@ -77,9 +77,9 @@ function generateQuoteNumber() {
 // ============================================================
 function buildHtmlQuote({ quoteNumber, date, company, salesPerson, userPhone, contact, lines, totalNet, vat, totalGross, currency, notes, lang }) {
   const L = {
-    de: { title: "Angebot", pos: "Pos.", product: "Produkt / Beschreibung", qty: "Menge", unit: "Einheit", unitPrice: "Einzelpreis", total: "Gesamtpreis", net: "Nettobetrag", vatLabel: "MwSt. 19 %", gross: "Bruttobetrag", validity: "Gültigkeit", validityVal: "30 Tage", delivery: "Lieferzeit", deliveryVal: "nach Vereinbarung", payment: "Zahlungsbedingungen", paymentVal: "30 Tage netto", greeting: "Sehr geehrte Damen und Herren,", closing: "Mit freundlichen Grüßen" },
-    tr: { title: "Teklif", pos: "Pos.", product: "Ürün / Açıklama", qty: "Miktar", unit: "Birim", unitPrice: "Birim Fiyat", total: "Toplam Fiyat", net: "Net Tutar", vatLabel: "KDV % 19", gross: "Brüt Tutar", validity: "Geçerlilik", validityVal: "30 gün", delivery: "Teslimat Süresi", deliveryVal: "Anlaşmaya göre", payment: "Ödeme Koşulları", paymentVal: "30 gün net", greeting: "Sayın Yetkili,", closing: "Saygılarımla" },
-    en: { title: "Quotation", pos: "Pos.", product: "Product / Description", qty: "Qty", unit: "Unit", unitPrice: "Unit Price", total: "Total", net: "Net Amount", vatLabel: "VAT 19 %", gross: "Gross Amount", validity: "Validity", validityVal: "30 days", delivery: "Delivery Time", deliveryVal: "Upon agreement", payment: "Payment Terms", paymentVal: "30 days net", greeting: "Dear Sir or Madam,", closing: "Best regards" }
+    de: { title: "Angebot", pos: "Pos.", product: "Produkt / Beschreibung", qty: "Menge", unit: "Einheit", unitPrice: "Einzelpreis", total: "Gesamtpreis", net: "Gesamtbetrag (Netto)", vatLabel: "MwSt.", gross: "Bruttobetrag", validity: "Gültigkeit", validityVal: "30 Tage", delivery: "Lieferbedingungen", deliveryVal: "EXW (Ex Works)", payment: "Zahlungsbedingungen", paymentVal: "30 Tage netto", greeting: "Sehr geehrte Damen und Herren,", closing: "Mit freundlichen Grüßen" },
+    tr: { title: "Teklif", pos: "Pos.", product: "Ürün / Açıklama", qty: "Miktar", unit: "Birim", unitPrice: "Birim Fiyat", total: "Toplam Fiyat", net: "Toplam Tutar (Net)", vatLabel: "KDV", gross: "Brüt Tutar", validity: "Geçerlilik", validityVal: "30 gün", delivery: "Teslimat Şekli", deliveryVal: "EXW (Ex Works)", payment: "Ödeme Koşulları", paymentVal: "30 gün net", greeting: "Sayın Yetkili,", closing: "Saygılarımla" },
+    en: { title: "Quotation", pos: "Pos.", product: "Product / Description", qty: "Qty", unit: "Unit", unitPrice: "Unit Price", total: "Total", net: "Total Amount (Net)", vatLabel: "VAT", gross: "Gross Amount", validity: "Validity", validityVal: "30 days", delivery: "Delivery Terms", deliveryVal: "EXW (Ex Works)", payment: "Payment Terms", paymentVal: "30 days net", greeting: "Dear Sir or Madam,", closing: "Best regards" }
   };
   const l = L[lang] || L.de;
   const sym = currency === "USD" ? "$" : currency === "GBP" ? "£" : "€";
@@ -155,20 +155,10 @@ function buildHtmlQuote({ quoteNumber, date, company, salesPerson, userPhone, co
 
     <!-- Totals -->
     <table style="width:100%;margin-top:16px;border-collapse:collapse;">
-      <tr>
-        <td style="width:60%;"></td>
-        <td style="padding:6px 8px;font-size:13px;color:#555;">${l.net}</td>
-        <td style="padding:6px 8px;font-size:13px;color:#333;text-align:right;">${fmt(totalNet)}</td>
-      </tr>
-      <tr>
-        <td></td>
-        <td style="padding:6px 8px;font-size:13px;color:#555;">${l.vatLabel}</td>
-        <td style="padding:6px 8px;font-size:13px;color:#333;text-align:right;">${fmt(vat)}</td>
-      </tr>
       <tr style="background:#f0f5fc;border-radius:6px;">
-        <td></td>
-        <td style="padding:10px 8px;font-size:15px;font-weight:700;color:#2B5597;">${l.gross}</td>
-        <td style="padding:10px 8px;font-size:15px;font-weight:700;color:#2B5597;text-align:right;">${fmt(totalGross)}</td>
+        <td style="width:60%;"></td>
+        <td style="padding:10px 8px;font-size:15px;font-weight:700;color:#2B5597;">${l.net}</td>
+        <td style="padding:10px 8px;font-size:15px;font-weight:700;color:#2B5597;text-align:right;">${fmt(totalNet)}</td>
       </tr>
     </table>
   </div>
@@ -257,7 +247,6 @@ Return JSON:
 {
   "lines": [{ "product": "string", "description": "string including RAL color name", "qty": number, "unit": "Stk.", "unitPrice": number }],
   "currency": "EUR",
-  "vatPercent": 19,
   "notes": "any additional info or special conditions",
   "subject": "quote email subject line",
   "ralCode": "extracted RAL code or null",
@@ -293,8 +282,6 @@ Return JSON:
     // Calculate totals
     const lines = parsed.lines || [];
     const totalNet = lines.reduce((s, l) => s + (l.qty * l.unitPrice), 0);
-    const vatAmt = totalNet * ((parsed.vatPercent || 19) / 100);
-    const totalGross = totalNet + vatAmt;
     const currency = parsed.currency || "EUR";
 
     // Enhance RAL description in lines
@@ -307,7 +294,7 @@ Return JSON:
     const htmlQuote = buildHtmlQuote({
       quoteNumber, date, company, salesPerson: salesPerson || company,
       userPhone: userPhone || "", contact, lines: enhancedLines,
-      totalNet, vat: vatAmt, totalGross, currency,
+      totalNet, vat: 0, totalGross: totalNet, currency,
       notes: parsed.notes || "", lang: lang || "de"
     });
 
