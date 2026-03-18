@@ -891,7 +891,7 @@ export default function App() {
                 <input type="text" value={current[f.k] || ""} onChange={(e) => upd(f.k, e.target.value)} placeholder={`${f.l}...`} style={S.input} onFocus={(e) => e.target.style.borderColor = T.acc} onBlur={(e) => e.target.style.borderColor = T.bd} />
               </div>
             ))}
-            <div><label style={S.label}>Notizen</label><textarea value={current.notes || ""} onChange={(e) => upd("notes", e.target.value)} placeholder={t("notesPlaceholder")} rows={3} style={{ ...S.input, resize: "vertical" }} onFocus={(e) => e.target.style.borderColor = T.acc} onBlur={(e) => e.target.style.borderColor = T.bd} /></div>
+            <div><label style={S.label}>{t("notes")}</label><textarea value={current.notes || ""} onChange={(e) => upd("notes", e.target.value)} placeholder={t("notesPlaceholder")} rows={3} style={{ ...S.input, resize: "vertical" }} onFocus={(e) => e.target.style.borderColor = T.acc} onBlur={(e) => e.target.style.borderColor = T.bd} /></div>
           </div>
 
           {/* Email preview – only for new contacts */}
@@ -912,7 +912,7 @@ export default function App() {
           {/* Delete button for existing contacts */}
           {editingContact && (
             <button onClick={() => { if (confirm(t("confirmDelete"))) deleteContact(editingContact); }} style={{ ...S.btn("transparent", "#EF4444"), border: "1px solid rgba(239,68,68,.3)", marginBottom: 24, padding: 12, fontSize: 13, fontWeight: 600 }}>
-              Kontakt löschen
+              {t("deleteContact")}
             </button>
           )}
 
@@ -973,7 +973,7 @@ export default function App() {
             </div>
           ))}
           {filtered.length === 0 && <p style={{ textAlign: "center", color: T.txM, padding: 40, fontSize: 14 }}>{searchQ ? t("noResults") : t("noContacts")}</p>}
-          {contacts.length > 0 && <button onClick={exportCSV} style={{ ...S.btn(T.sf, T.tx), border: `1px solid ${T.bd}`, marginTop: 16, fontSize: 14, fontWeight: 600 }}><Ic name="download" size={16} color={T.acc} /> CSV exportieren</button>}
+          {contacts.length > 0 && <button onClick={exportCSV} style={{ ...S.btn(T.sf, T.tx), border: `1px solid ${T.bd}`, marginTop: 16, fontSize: 14, fontWeight: 600 }}><Ic name="download" size={16} color={T.acc} /> {t("exportCsv")}</button>}
         </div>
       )}
 
@@ -989,7 +989,7 @@ export default function App() {
             {/* Header */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
               <button onClick={() => setView("contacts")} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><Ic name="back" size={22} color={T.txM} /></button>
-              <h2 style={{ fontSize: 18, fontWeight: 700 }}>Kontakt</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700 }}>{t("contactTitle")}</h2>
             </div>
 
             {/* Avatar + Info */}
@@ -1038,7 +1038,7 @@ export default function App() {
 
             {/* Notes */}
             {c.notes && <div style={{ ...S.card, padding: 16, marginBottom: 14 }}>
-              <p style={{ fontSize: 11, color: T.txM, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 }}>Notizen</p>
+              <p style={{ fontSize: 11, color: T.txM, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 }}>{t("notes")}</p>
               <p style={{ fontSize: 14, color: T.tx, lineHeight: 1.6, fontStyle: "italic" }}>{c.notes}</p>
             </div>}
 
@@ -1046,9 +1046,9 @@ export default function App() {
             <div style={{ ...S.card, padding: 20, marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
                 <Ic name="clock" size={16} color={T.accS} />
-                <h3 style={{ fontSize: 14, fontWeight: 700 }}>Aktivitäten</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 700 }}>{t("activities")}</h3>
               </div>
-              {timeline.length === 0 && <p style={{ fontSize: 13, color: T.txD, textAlign: "center", padding: "12px 0" }}>Noch keine Aktivitäten</p>}
+              {timeline.length === 0 && <p style={{ fontSize: 13, color: T.txD, textAlign: "center", padding: "12px 0" }}>{t("noActivities")}</p>}
               {timeline.map((ev, idx) => {
                 const isEmail = ev.type === "email";
                 const hasHtml = !!ev.htmlBody;
@@ -1062,10 +1062,10 @@ export default function App() {
                          } else {
                            // Fallback for old emails
                            const fallback = `<html><body style="font-family:sans-serif;padding:30px;color:#333;line-height:1.6;max-width:600px;margin:0 auto;">
-                             <h2 style="margin-top:0;">E-Mail Vorschau nicht verfügbar</h2>
-                             <p>Hier stand die E-Mail an <b>${c.name}</b> bezüglich <b>${ev.messe || selectedMesse?.name || "der Messe"}</b>.</p>
+                             <h2 style="margin-top:0;">${t("emailPreviewUnavailable")}</h2>
+                             <p>${t("emailWasSentTo")} <b>${c.name}</b> ${t("regarding")} <b>${ev.messe || selectedMesse?.name || ""}</b>.</p>
                              <p style="color:#666;background:#f5f5f5;padding:16px;border-radius:8px;font-size:14px;margin-top:24px;">
-                               <i>Hinweis: Der genaue HTML-Code dieser E-Mail wurde damals nicht in der Datenbank gespeichert, da diese Funktion erst später hinzugefügt wurde. Ab sofort werden alle neuen E-Mails hier originalgetreu angezeigt!</i>
+                               <i>${t("emailPreviewHint")}</i>
                              </p>
                            </body></html>`;
                            setViewingEmail(fallback);
@@ -1098,7 +1098,7 @@ export default function App() {
                       </p>
                       {isEmail && (
                         <button style={{ background: "none", border: "none", color: hasHtml ? T.accS : T.txD, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                          <Ic name="mail" size={12} color={hasHtml ? T.accS : T.txD} /> {hasHtml ? "Mail ansehen" : "Info"}
+                          <Ic name="mail" size={12} color={hasHtml ? T.accS : T.txD} /> {hasHtml ? t("viewMail") : t("info")}
                         </button>
                       )}
                     </div>
@@ -1213,7 +1213,7 @@ export default function App() {
             </div>
 
             <div style={{ marginBottom: 20 }}>
-              <label style={S.label}>E-Mail Profilbild (Avatar)</label>
+              <label style={S.label}>{t("emailAvatar")}</label>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 {smtp.avatar ? (
                   <div style={{ position: "relative" }}>
@@ -1247,17 +1247,17 @@ export default function App() {
                     reader.readAsDataURL(file);
                   }} />
                   <button onClick={() => document.getElementById("avatarUpload").click()} style={{ ...S.btn(T.sf, T.txM), fontSize: 12, padding: "6px 14px", border: `1px solid ${T.bd}` }}>
-                    {smtp.avatar ? "Bild ändern" : "Bild hochladen"}
+                    {smtp.avatar ? t("changePic") : t("uploadPic")}
                   </button>
-                  <p style={{ fontSize: 11, color: T.txD, marginTop: 6, marginBottom: 0 }}>Wird links neben deiner Signatur angezeigt.</p>
+                  <p style={{ fontSize: 11, color: T.txD, marginTop: 6, marginBottom: 0 }}>{t("avatarHint")}</p>
                 </div>
               </div>
             </div>
 
             <div style={{ marginBottom: 20 }}>
-              <label style={S.label}>Deine Telefon-/Mobilnummer (für E-Mail Signatur)</label>
+              <label style={S.label}>{t("yourPhoneForSignature")}</label>
               <input type="tel" value={smtp.userPhone || ""} onChange={(e) => setSmtp((s) => ({ ...s, userPhone: e.target.value }))} placeholder="+49 123 456789" style={S.input} />
-              <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>Wird automatisch in deiner Windoform E-Mail-Signatur hinterlegt.</p>
+              <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>{t("phoneHint")}</p>
             </div>
 
             {/* Save + Test buttons */}
@@ -1271,7 +1271,7 @@ export default function App() {
                 notify(t("smtpSaved"));
               } catch (e) { notify(t("saveFailed") + ": " + e.message, "error"); }
             }} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), marginBottom: 10, boxShadow: `0 4px 16px rgba(43,85,151,.25)` }}>
-              Speichern
+              {t("save")}
             </button>
 
             <button onClick={async () => {
@@ -1323,14 +1323,14 @@ export default function App() {
               }
             }} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", color: T.txM, cursor: "pointer" }}><Ic name="x" size={24} /></button>
             
-            <h3 style={{ fontSize: 18, color: T.tx, marginBottom: 8, marginTop: 0 }}>E-Mail an {composeModal.contact.name}</h3>
-            <p style={{ fontSize: 13, color: T.txM, marginBottom: 20 }}>Katalog, Begrüßung und Signatur werden automatisch generiert.</p>
+            <h3 style={{ fontSize: 18, color: T.tx, marginBottom: 8, marginTop: 0 }}>{t("emailTo")} {composeModal.contact.name}</h3>
+            <p style={{ fontSize: 13, color: T.txM, marginBottom: 20 }}>{t("aiEmailHint")}</p>
             
-            <label style={S.label}>Persönliche Nachricht (optional)</label>
+            <label style={S.label}>{t("customMsgLabel")}</label>
             <textarea
               value={customMsg}
               onChange={(e) => setCustomMsg(e.target.value)}
-              placeholder="z.B. Danke für das nette Gespräch heute! (Wird direkt als Text übernommen)"
+              placeholder={t("customMsgPlaceholder")}
               rows={4}
               style={{ ...S.input, resize: "vertical", marginBottom: 16 }}
             />
@@ -1348,9 +1348,9 @@ export default function App() {
                   const data = await res.json();
                   if (res.ok && data.result) {
                     setCustomMsg(data.result);
-                    notify("Text erfolgreich durch KI optimiert!", "success");
+                    notify(t("aiSuccess"), "success");
                   } else {
-                    notify("KI Fehler: " + (data.error || "Unbekannt"), "error");
+                    notify(t("aiError") + " " + (data.error || "Unbekannt"), "error");
                   }
                 } catch(e) { notify("Verbindungsfehler zur KI", "error"); }
                 setIsGeneratingAI(false);
@@ -1358,7 +1358,7 @@ export default function App() {
               style={{ width: "100%", padding: "12px", background: "linear-gradient(90deg, #10B981, #059669)", border: "none", borderRadius: 12, color: T.wh, fontSize: 13, fontWeight: 700, cursor: (!customMsg || isGeneratingAI) ? "not-allowed" : "pointer", marginBottom: 24, opacity: (!customMsg || isGeneratingAI) ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "opacity 0.2s" }}
             >
               <Ic name="edit" size={16} /> {/* Using edit as a replacement for sparkles since sparkless may not exist in Ic */}
-              {isGeneratingAI ? "KI übersetzt..." : "KI: Professionell umschreiben & übersetzen"}
+              {isGeneratingAI ? t("aiTranslating") : t("aiTranslateBtn")}
             </button>
 
             <button onClick={async () => {
@@ -1382,7 +1382,7 @@ export default function App() {
                 }
               }
             }} style={S.btn(T.acc, T.wh)}>
-              <Ic name="send" size={18} color={T.wh} /> Jetzt senden
+              <Ic name="send" size={18} color={T.wh} /> {t("sendNow")}
             </button>
           </div>
         </div>
