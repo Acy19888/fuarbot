@@ -256,6 +256,7 @@ export default function App() {
   const [smtp, setSmtp] = useState({ smtpHost: "", smtpPort: "465", smtpUser: "", smtpPass: "", smtpFrom: "", companyName: "Windoform", catalogUrl: "https://windoform.de", emailSignature: "" });
   const [smtpSaved, setSmtpSaved] = useState(false);
   const [smtpTesting, setSmtpTesting] = useState(false);
+  const [defaultMsgs, setDefaultMsgs] = useState({ de: "", tr: "", en: "" });
 
   const SMTP_PRESETS = [
     { label: "Google Workspace / Gmail", host: "smtp.gmail.com", port: "465" },
@@ -310,6 +311,7 @@ export default function App() {
             const d = snap.data();
             setSmtp(d.smtp || smtp);
             setSmtpSaved(!!d.smtp?.smtpHost);
+            if (d.defaultMsgs) setDefaultMsgs(d.defaultMsgs);
           }
         } catch (e) { console.log("No SMTP settings yet"); }
       }
@@ -488,7 +490,8 @@ export default function App() {
     if (withContact) {
       if (enriched.email) {
         setComposeModal({ type: "email", contact: enriched, isNewScan: true, scanData: enriched, savedId });
-        setCustomMsg("");
+        const tl = detectContactLang(enriched.email, enriched.name, enriched.address);
+        setCustomMsg(defaultMsgs[tl] || defaultMsgs.de || "");
       } else {
         const waPhone = getBestWhatsAppNumber(enriched);
         if (waPhone) {
@@ -1062,7 +1065,8 @@ export default function App() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
               {c.email && <button onClick={() => {
                 setComposeModal({ type: "email", contact: c, savedId: c.id });
-                setCustomMsg("");
+                const tl = detectContactLang(c.email, c.name, c.address);
+                setCustomMsg(defaultMsgs[tl] || defaultMsgs.de || "");
               }} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid ${T.bd}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: T.sf }}>
                 <Ic name="mail" size={20} color={T.ok} />
                 <span style={{ fontSize: 11, color: T.txM, fontWeight: 600 }}>Email</span>
@@ -1306,13 +1310,29 @@ export default function App() {
               <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>{t("phoneHint")}</p>
             </div>
 
+            <div style={{ marginBottom: 20 }}>
+              <label style={S.label}>
+                {lang === "tr" ? "Standart E-posta Mesajı (" + (lang === "de" ? "Deutsch" : lang === "tr" ? "Türkçe" : "English") + ")" : lang === "en" ? "Default Email Message (" + (lang === "en" ? "English" : "") + ")" : "Standard E-Mail Nachricht (Deutsch)"}
+              </label>
+              <textarea
+                value={defaultMsgs[lang] || ""}
+                onChange={(e) => setDefaultMsgs((d) => ({ ...d, [lang]: e.target.value }))}
+                placeholder={lang === "tr" ? "Standart kişisel mesajınızı buraya yazın..." : lang === "en" ? "Your default personal message..." : "Standard-Nachricht für neue Kontakte..."}
+                rows={4}
+                style={{ ...S.input, resize: "vertical", marginBottom: 4 }}
+              />
+              <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>
+                {lang === "tr" ? "Bu metin, e-posta hazırlarken otomatik olarak doldurulur. YZ butonu onu iyileştirir." : lang === "en" ? "This text pre-fills the compose window. The AI button will improve it." : "Dieser Text wird beim E-Mail schreiben automatisch eingefügt. Der KI-Button verbessert ihn dann."}
+              </p>
+            </div>
+
             {/* Save + Test buttons */}
             <button onClick={async () => {
               if (!smtp.smtpHost || !smtp.smtpUser || !smtp.smtpPass) { notify(t("fillAllFields"), "error"); return; }
               try {
                 const { setDoc, doc: fbDoc } = await import("firebase/firestore");
                 const { db: fbDb } = await import("./firebase.js");
-                await setDoc(fbDoc(fbDb, "userSettings", user.uid), { smtp, updatedAt: new Date().toISOString() }, { merge: true });
+              await setDoc(fbDoc(fbDb, "userSettings", user.uid), { smtp, defaultMsgs, updatedAt: new Date().toISOString() }, { merge: true });
                 setSmtpSaved(true);
                 notify(t("smtpSaved"));
               } catch (e) { notify(t("saveFailed") + ": " + e.message, "error"); }
