@@ -779,7 +779,7 @@ export default function App() {
             {t("uploadPhoto")}
           </button>
           <button onClick={() => { setCurrent({ name: "", company: "", position: "", email: "", phone: "", mobile: "", website: "", address: "", notes: "" }); setCapturedImg(null); setCapturedCustomerPic(null); setEditingContact(null); setView("review"); }} style={{ ...S.btn("transparent", T.txM), border: `1px dashed ${T.bd}`, marginBottom: 28, padding: 14, fontSize: 14, fontWeight: 500 }}>
-            <Ic name="edit" size={18} color={T.txM} /> Manuell eintragen
+            <Ic name="edit" size={18} color={T.txM} /> {t("manualEntry")}
           </button>
 
           {/* Contacts */}
