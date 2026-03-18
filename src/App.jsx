@@ -1488,102 +1488,195 @@ export default function App() {
       {/* ============ CHAT VIEW ============ */}
       {user && view === "chat" && (() => {
         const msgs = chatMessages || [{ role: "bot", text: t("chatGreeting") }];
+
+        // Format bot message text into structured JSX
+        const renderBotText = (text) => {
+          const lines = text.split("\n");
+          return lines.map((line, i) => {
+            // Section headers (lines ending with : or starting with **)
+            if (/^#{1,3}\s/.test(line)) {
+              const clean = line.replace(/^#{1,3}\s/, "");
+              return <div key={i} style={{ fontWeight: 700, fontSize: 13, color: T.accS, marginTop: i > 0 ? 8 : 0, marginBottom: 2, textTransform: "uppercase", letterSpacing: ".04em" }}>{clean}</div>;
+            }
+            // Bold lines (e.g. **Angebot:**)
+            if (/^\*\*(.+)\*\*/.test(line)) {
+              const clean = line.replace(/\*\*/g, "");
+              return <div key={i} style={{ fontWeight: 700, fontSize: 13, color: T.tx, marginTop: 6 }}>{clean}</div>;
+            }
+            // Bullet points ▸ - •
+            if (/^[\s]*[▸\-•]\s/.test(line)) {
+              const clean = line.replace(/^[\s]*[▸\-•]\s/, "");
+              // Check if line has key:value
+              const kvMatch = clean.match(/^(.+?):\s*(.+)$/);
+              if (kvMatch) {
+                return (
+                  <div key={i} style={{ display: "flex", gap: 6, marginTop: 3, alignItems: "baseline" }}>
+                    <span style={{ color: T.acc, fontSize: 10, flexShrink: 0 }}>▸</span>
+                    <span style={{ fontSize: 13 }}>
+                      <span style={{ color: T.txM, fontWeight: 600 }}>{kvMatch[1]}: </span>
+                      <span style={{ color: T.tx }}>{kvMatch[2]}</span>
+                    </span>
+                  </div>
+                );
+              }
+              return (
+                <div key={i} style={{ display: "flex", gap: 6, marginTop: 3, alignItems: "flex-start" }}>
+                  <span style={{ color: T.acc, fontSize: 10, flexShrink: 0, marginTop: 3 }}>▸</span>
+                  <span style={{ fontSize: 13, color: T.tx }}>{clean}</span>
+                </div>
+              );
+            }
+            // Dividers
+            if (/^[-─—]{3,}$/.test(line.trim())) {
+              return <div key={i} style={{ height: 1, background: T.bd, margin: "8px 0" }} />;
+            }
+            // Key: Value lines 
+            const kvMatch = line.match(/^(.{2,30}):\s+(.+)$/);
+            if (kvMatch && !line.startsWith("http")) {
+              return (
+                <div key={i} style={{ display: "flex", gap: 6, marginTop: 3, flexWrap: "wrap" }}>
+                  <span style={{ color: T.txM, fontSize: 12, fontWeight: 600, flexShrink: 0 }}>{kvMatch[1]}:</span>
+                  <span style={{ color: T.tx, fontSize: 13 }}>{kvMatch[2]}</span>
+                </div>
+              );
+            }
+            // Empty line
+            if (!line.trim()) return <div key={i} style={{ height: 5 }} />;
+            // Regular text
+            return <p key={i} style={{ fontSize: 13, lineHeight: 1.6, margin: "2px 0", color: T.tx }}>{line}</p>;
+          });
+        };
+
+        const sendMsg = async () => {
+          const q = chatInput.trim();
+          if (!q || chatLoading) return;
+          setChatInput("");
+          const newMsgs = [...msgs, { role: "user", text: q }];
+          setChatMessages(newMsgs);
+          setChatLoading(true);
+          // scroll to bottom
+          setTimeout(() => {
+            const el = document.getElementById("chat-messages");
+            if (el) el.scrollTop = el.scrollHeight;
+          }, 50);
+          try {
+            const res = await fetch("/api/chat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ question: q, contacts: allContacts, quotes: allQuotes, lang })
+            });
+            const data = await res.json();
+            const botMsgs = [...newMsgs, { role: "bot", text: data.answer || data.error || "Fehler" }];
+            setChatMessages(botMsgs);
+            setTimeout(() => {
+              const el = document.getElementById("chat-messages");
+              if (el) el.scrollTop = el.scrollHeight;
+            }, 100);
+          } catch { setChatMessages([...newMsgs, { role: "bot", text: "Verbindungsfehler." }]); }
+          setChatLoading(false);
+        };
+
         return (
-          <div style={{ display: "flex", flexDirection: "column", height: "100dvh", paddingBottom: 90 }}>
+          <div style={{ display: "flex", flexDirection: "column", position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", maxWidth: 480, width: "100%", height: "100%", background: T.bg, zIndex: 10 }}>
             {/* Header */}
-            <div style={{ padding: "20px 20px 12px", background: T.sf, borderBottom: `1px solid ${T.bd}`, display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg,${T.acc},#1E4080)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Ic name="ai" size={18} color={T.wh} />
+            <div style={{ padding: "52px 20px 12px", background: T.sf, borderBottom: `1px solid ${T.bd}`, display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 12, background: `linear-gradient(135deg,${T.acc},#1E4080)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 16px ${T.acc}44`, flexShrink: 0 }}>
+                <Ic name="bot" size={20} color={T.wh} />
               </div>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: 15 }}>WINDOFORM AI</div>
-                <div style={{ fontSize: 11, color: T.ok, fontWeight: 600 }}>● Online · {allContacts.length} {lang === "tr" ? "kişi" : lang === "en" ? "contacts" : "Kontakte"} · {allQuotes.length} {lang === "tr" ? "teklif" : lang === "en" ? "quotes" : "Angebote"}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: 15, letterSpacing: "-.01em" }}>WINDOFORM AI</div>
+                <div style={{ fontSize: 11, color: T.ok, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.ok, display: "inline-block" }} />
+                  {allContacts.length} {lang === "tr" ? "kişi" : "Kontakte"} · {allQuotes.length} {lang === "tr" ? "teklif" : "Angebote"}
+                </div>
               </div>
+              <button onClick={() => setChatMessages(null)} style={{ background: "none", border: "none", cursor: "pointer", color: T.txD, fontSize: 11, padding: "4px 8px" }}>Reset</button>
             </div>
 
             {/* Messages */}
-            <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 4px", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div id="chat-messages" style={{ flex: 1, overflowY: "auto", padding: "16px 14px 8px", display: "flex", flexDirection: "column", gap: 12, WebkitOverflowScrolling: "touch" }}>
               {msgs.map((m, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", alignItems: "flex-end", gap: 8 }}>
                   {m.role === "bot" && (
-                    <div style={{ width: 28, height: 28, borderRadius: 8, background: `linear-gradient(135deg,${T.acc},#1E4080)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginRight: 8, marginTop: 2 }}>
-                      <Ic name="ai" size={13} color={T.wh} />
+                    <div style={{ width: 26, height: 26, borderRadius: 8, background: `linear-gradient(135deg,${T.acc},#1E4080)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginBottom: 2 }}>
+                      <Ic name="bot" size={13} color={T.wh} />
                     </div>
                   )}
-                  <div style={{ maxWidth: "78%", padding: "10px 14px", borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: m.role === "user" ? `linear-gradient(135deg,${T.acc},#1E4080)` : T.sf2, color: m.role === "user" ? T.wh : T.tx, fontSize: 14, lineHeight: 1.55, whiteSpace: "pre-wrap", wordBreak: "break-word", boxShadow: m.role === "user" ? `0 4px 12px ${T.acc}44` : "none" }}>
-                    {m.text}
+                  <div style={{
+                    maxWidth: "82%",
+                    padding: m.role === "user" ? "10px 14px" : "12px 14px",
+                    borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "4px 18px 18px 18px",
+                    background: m.role === "user"
+                      ? `linear-gradient(135deg,${T.acc},#1E4080)`
+                      : T.sf,
+                    border: m.role === "bot" ? `1px solid ${T.bd}` : "none",
+                    color: m.role === "user" ? T.wh : T.tx,
+                    boxShadow: m.role === "user" ? `0 4px 14px ${T.acc}44` : "0 2px 8px rgba(0,0,0,.15)",
+                  }}>
+                    {m.role === "user"
+                      ? <p style={{ fontSize: 14, lineHeight: 1.5, margin: 0 }}>{m.text}</p>
+                      : <div>{renderBotText(m.text)}</div>
+                    }
                   </div>
                 </div>
               ))}
               {chatLoading && (
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: `linear-gradient(135deg,${T.acc},#1E4080)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Ic name="ai" size={13} color={T.wh} />
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                  <div style={{ width: 26, height: 26, borderRadius: 8, background: `linear-gradient(135deg,${T.acc},#1E4080)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Ic name="bot" size={13} color={T.wh} />
                   </div>
-                  <div style={{ background: T.sf2, borderRadius: "18px 18px 18px 4px", padding: "12px 16px" }}>
-                    <div style={{ display: "flex", gap: 4 }}>
-                      {[0,1,2].map(j => <div key={j} style={{ width: 6, height: 6, borderRadius: "50%", background: T.txD, animation: `pulse 1.2s ease ${j*0.2}s infinite` }} />)}
+                  <div style={{ background: T.sf, border: `1px solid ${T.bd}`, borderRadius: "4px 18px 18px 18px", padding: "14px 18px" }}>
+                    <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                      {[0,1,2].map(j => <div key={j} style={{ width: 7, height: 7, borderRadius: "50%", background: T.acc, animation: `pulse 1.2s ease ${j*0.2}s infinite` }} />)}
                     </div>
                   </div>
                 </div>
               )}
+              <div style={{ height: 4 }} />
             </div>
 
-            {/* Input */}
-            <div style={{ position: "fixed", bottom: 70, left: "50%", transform: "translateX(-50%)", maxWidth: 480, width: "100%", padding: "10px 16px", background: T.sf, borderTop: `1px solid ${T.bd}`, display: "flex", gap: 8 }}>
-              <input
-                value={chatInput}
-                onChange={e => setChatInput(e.target.value)}
-                onKeyDown={async e => {
-                  if (e.key === "Enter" && !e.shiftKey && chatInput.trim() && !chatLoading) {
-                    e.preventDefault();
-                    const q = chatInput.trim();
-                    setChatInput("");
-                    const newMsgs = [...msgs, { role: "user", text: q }];
-                    setChatMessages(newMsgs);
-                    setChatLoading(true);
-                    try {
-                      const res = await fetch("/api/chat", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ question: q, contacts: allContacts, quotes: allQuotes, lang })
-                      });
-                      const data = await res.json();
-                      setChatMessages([...newMsgs, { role: "bot", text: data.answer || data.error || "Fehler" }]);
-                    } catch { setChatMessages([...newMsgs, { role: "bot", text: "Verbindungsfehler." }]); }
-                    setChatLoading(false);
-                  }
-                }}
-                placeholder={t("chatPlaceholder")}
-                style={{ flex: 1, background: T.bg, border: `1px solid ${T.bd}`, borderRadius: 12, padding: "10px 14px", fontSize: 14, color: T.tx, outline: "none" }}
-              />
-              <button
-                disabled={!chatInput.trim() || chatLoading}
-                onClick={async () => {
-                  const q = chatInput.trim();
-                  if (!q || chatLoading) return;
-                  setChatInput("");
-                  const newMsgs = [...msgs, { role: "user", text: q }];
-                  setChatMessages(newMsgs);
-                  setChatLoading(true);
-                  try {
-                    const res = await fetch("/api/chat", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ question: q, contacts: allContacts, quotes: allQuotes, lang })
-                    });
-                    const data = await res.json();
-                    setChatMessages([...newMsgs, { role: "bot", text: data.answer || data.error || "Fehler" }]);
-                  } catch { setChatMessages([...newMsgs, { role: "bot", text: "Verbindungsfehler." }]); }
-                  setChatLoading(false);
-                }}
-                style={{ width: 44, height: 44, borderRadius: 12, background: chatInput.trim() && !chatLoading ? `linear-gradient(135deg,${T.acc},#1E4080)` : T.sf2, border: "none", cursor: chatInput.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <Ic name="send" size={18} color={chatInput.trim() && !chatLoading ? T.wh : T.txD} />
-              </button>
+            {/* Input – NOT fixed, stays above keyboard on mobile */}
+            <div style={{ flexShrink: 0, padding: "10px 14px", background: T.sf, borderTop: `1px solid ${T.bd}`, paddingBottom: "calc(10px + env(safe-area-inset-bottom, 0px))" }}>
+              {/* Quick suggestion pills */}
+              {msgs.length <= 1 && (
+                <div style={{ display: "flex", gap: 6, marginBottom: 10, overflowX: "auto", paddingBottom: 2 }}>
+                  {[
+                    lang === "tr" ? "Son teklif kim?" : "Letztes Angebot?",
+                    lang === "tr" ? "Tüm teklifler" : "Alle Angebote",
+                    lang === "tr" ? "Kaç kişi var?" : "Wieviele Kontakte?",
+                  ].map((pill, pi) => (
+                    <button key={pi} onClick={() => { setChatInput(pill); }} style={{
+                      background: T.accG, border: `1px solid ${T.acc}44`, borderRadius: 20,
+                      padding: "6px 12px", fontSize: 12, color: T.accS, cursor: "pointer",
+                      whiteSpace: "nowrap", flexShrink: 0, fontWeight: 500
+                    }}>{pill}</button>
+                  ))}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMsg(); } }}
+                  placeholder={lang === "tr" ? "Müşteri fiyatını sor..." : "Frag nach Kundenpreisen..."}
+                  style={{ flex: 1, background: T.bg, border: `1px solid ${T.bd}`, borderRadius: 22, padding: "11px 16px", fontSize: 14, color: T.tx, outline: "none", fontFamily: "'Montserrat',sans-serif" }}
+                  onFocus={e => e.target.style.borderColor = T.acc}
+                  onBlur={e => e.target.style.borderColor = T.bd}
+                />
+                <button
+                  disabled={!chatInput.trim() || chatLoading}
+                  onClick={sendMsg}
+                  style={{ width: 44, height: 44, borderRadius: "50%", background: chatInput.trim() && !chatLoading ? `linear-gradient(135deg,${T.acc},#1E4080)` : T.sf2, border: "none", cursor: chatInput.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: chatInput.trim() ? `0 4px 12px ${T.acc}55` : "none", transition: "all .2s" }}>
+                  <Ic name="send" size={18} color={chatInput.trim() && !chatLoading ? T.wh : T.txD} />
+                </button>
+              </div>
+              {/* Bottom spacing for nav bar */}
+              <div style={{ height: 72 }} />
             </div>
           </div>
         );
       })()}
+
 
       {/* ============ QUOTES VIEW ============ */}
       {user && selectedMesse && view === "quotes" && (

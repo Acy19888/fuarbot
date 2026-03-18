@@ -14,14 +14,13 @@ export default async function handler(req, res) {
 
   // Build contact summary
   const contactSummary = contacts.slice(0, 300).map(c =>
-    `KONTAKT: ${c.name || "?"} | Firma: ${c.company || ""} | Email: ${c.email || ""} | Tel: ${c.phone || ""} | Adresse: ${c.address || ""}`
+    `KONTAKT: ${c.name || "?"} | Firma: ${c.company || ""} | Email: ${c.email || ""} | Tel: ${c.phone || ""}`
   ).join("\n");
 
   // Sort quotes by date descending (newest first)
   const sortedQuotes = [...quotes].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
   const quoteSummary = sortedQuotes.slice(0, 300).map(q => {
-    // Build detailed line info including handle/grip descriptions
     const lines = Array.isArray(q.lines) && q.lines.length > 0
       ? q.lines.map(l => {
           const product = l.product || "";
@@ -29,28 +28,27 @@ export default async function handler(req, res) {
           const qty = l.qty || 1;
           const price = l.unitPrice || 0;
           const total = (parseFloat(qty) * parseFloat(price)).toFixed(2);
-          return `  ▸ ${product}${desc ? " – " + desc : ""}: ${qty} Stk. × ${price} ${q.currency || "EUR"} = ${total} ${q.currency || "EUR"}`;
+          return `  - ${product}${desc ? " – " + desc : ""}: ${qty} Stk. × ${price} ${q.currency || "EUR"} = ${total} ${q.currency || "EUR"}`;
         }).join("\n")
-      : (q.product ? `  ▸ ${q.product}: Gesamt ${q.totalGross} ${q.currency || "EUR"}` : "  (keine Positionen)");
+      : (q.product ? `  - ${q.product}: Gesamt ${q.totalGross} ${q.currency || "EUR"}` : "  (keine Positionen)");
 
     const date = q.createdAt ? new Date(q.createdAt).toLocaleDateString("de-DE") : "?";
-    const sentDate = q.sentAt ? new Date(q.sentAt).toLocaleDateString("de-DE") : null;
-
     return `---
-ANGEBOT: ${q.quoteNumber || "?"} | Kunde: ${q.contactName || q.contactEmail || "?"} | Firma: ${q.company || ""}
-Status: ${q.status || "draft"} | Erstellt: ${date}${sentDate ? " | Gesendet: " + sentDate : ""} | Gesamt: ${q.totalGross || 0} ${q.currency || "EUR"}
-Positionen:
+Angebot: ${q.quoteNumber || "?"} | Kunde: ${q.contactName || q.contactEmail || "?"} | Firma: ${q.company || ""}
+Status: ${q.status || "draft"} | Datum: ${date} | Gesamt: ${q.totalGross || 0} ${q.currency || "EUR"}
 ${lines}`;
   }).join("\n");
 
-  const systemPrompt = `Du bist ein hilfreicher Geschäftsassistent für WINDOFORM, einem türkischen Hersteller von Tür- und Fenstergriffen.
-Du hast Zugriff auf die CRM-Daten: Kontakte und Angebote.
+  const systemPrompt = `Du bist ein KI-Assistent für WINDOFORM (Türkischer Hersteller von Tür- und Fenstergriffen).
 
-WICHTIG bei Preisanfragen (z.B. "letzter Preis von Cem Yüksel" / "letztes Angebot Ege Akustik"):
-1. Suche nach Kunde beim Namen UND/ODER Firmennamen (Teilübereinstimmung reicht!)
-2. Nenne das NEUESTE Angebot mit: Angebotsnummer, Datum, Produktname/Griff-Bezeichnung, Stückpreis und Gesamtpreis
-3. Falls mehrere Angebote vorhanden → liste alle auf, neuestes zuerst
-4. Sprache: Antworte auf Deutsch, außer die Frage ist auf Türkisch → dann Türkisch, auf Englisch → dann Englisch
+ANTWORT-FORMAT (immer einhalten):
+- Strukturiere Antworten klar mit Trennlinien und Bullet-Points
+- Für jeden gefundenen Datensatz: nutze "---" als Trenner
+- Nutze "▸ Feldname: Wert" für Details
+- Wenn nach Preisen gefragt: zeige Angebotsnummer, Datum, Produkt/Griff, Stückpreis, Gesamt
+- Maximal 3-4 Angebote anzeigen, neueste zuerst
+- Antworte auf Deutsch (außer Frage ist Türkisch → Türkisch)
+- Kurz und präzise, keine langen Erklärungen
 
 HEUTE: ${new Date().toLocaleDateString("de-DE")}
 
@@ -60,7 +58,8 @@ ${contactSummary || "Keine Kontakte"}
 === ANGEBOTE (${quotes.length} gesamt, neueste zuerst) ===
 ${quoteSummary || "Keine Angebote"}
 
-Antworte präzise und direkt. Erfinde NIEMALS Daten. Wenn nichts gefunden → kurz mitteilen.`;
+Suche bei Namen/Firmen auch nach Teilübereinstimmungen (z.B. "Ege" findet "Ege Akustik").
+Erfinde NIEMALS Daten. Wenn nothing found → "Kein Angebot gefunden für [Name]."`;
 
   try {
     const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
@@ -72,7 +71,7 @@ Antworte präzise und direkt. Erfinde NIEMALS Daten. Wenn nichts gefunden → ku
       },
       body: JSON.stringify({
         model: "claude-opus-4-5",
-        max_tokens: 700,
+        max_tokens: 600,
         system: systemPrompt,
         messages: [{ role: "user", content: question }]
       })
