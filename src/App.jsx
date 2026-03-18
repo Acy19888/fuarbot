@@ -848,22 +848,35 @@ export default function App() {
 
           {/* Customer Avatar Capture */}
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 24, flexDirection: "column", alignItems: "center" }}>
-            <input type="file" accept="image/*" id="customerPicInput" style={{ display: "none" }} onChange={(e) => {
+            <input type="file" accept="image/*" capture="environment" id="customerPicCamera" style={{ display: "none" }} onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) {
-                const r = new FileReader();
-                r.onload = (ev) => setCapturedCustomerPic(ev.target.result);
-                r.readAsDataURL(f);
+                const r = new FileReader(); r.onload = (ev) => setCapturedCustomerPic(ev.target.result); r.readAsDataURL(f);
               }
             }} />
-            <label htmlFor="customerPicInput" style={{ ...S.card, width: 88, height: 88, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", padding: 0, border: `2px dashed ${T.acc}`, marginBottom: 8 }}>
+            <input type="file" accept="image/*" id="customerPicGallery" style={{ display: "none" }} onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) {
+                const r = new FileReader(); r.onload = (ev) => setCapturedCustomerPic(ev.target.result); r.readAsDataURL(f);
+              }
+            }} />
+
+            <div style={{ ...S.card, width: 88, height: 88, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 0, border: `2px dashed ${T.acc}`, marginBottom: 16 }}>
               {capturedCustomerPic || current.customerAvatar ? (
                 <img src={capturedCustomerPic || current.customerAvatar} alt="Kunde" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 15%" }} />
               ) : (
-                <Ic name="camera" size={32} color={T.acc} />
+                <Ic name="user" size={36} color={T.txD} />
               )}
-            </label>
-            <span style={{ fontSize: 12, color: T.txM, fontWeight: 600 }}>{capturedCustomerPic || current.customerAvatar ? "Foto ändern" : "Kundenfoto hinzufügen"}</span>
+            </div>
+            
+            <div style={{ display: "flex", gap: 12 }}>
+              <label htmlFor="customerPicCamera" style={{ ...S.btn(T.sf, T.tx), padding: "10px 16px", borderRadius: 20, fontSize: 13, border: `1px solid ${T.bd}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+                <Ic name="camera" size={16} color={T.tx} /> Kunde knipsen
+              </label>
+              <label htmlFor="customerPicGallery" style={{ ...S.btn(T.sf, T.tx), padding: "10px 16px", borderRadius: 20, fontSize: 13, border: `1px solid ${T.bd}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+                <Ic name="image" size={16} color={T.tx} /> Aus Galerie
+              </label>
+            </div>
           </div>
 
           {capturedImg && <div style={{ ...S.card, overflow: "hidden", marginBottom: 20, height: 140 }}><img src={capturedImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div>}
