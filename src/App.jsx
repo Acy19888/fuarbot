@@ -469,7 +469,7 @@ export default function App() {
 
     if (withContact) {
       if (enriched.email) {
-        setComposeModal({ contact: enriched, isNewScan: true, scanData: enriched, savedId });
+        setComposeModal({ type: "email", contact: enriched, isNewScan: true, scanData: enriched, savedId });
         setCustomMsg("");
       } else {
         const waPhone = getBestWhatsAppNumber(enriched);
@@ -477,8 +477,8 @@ export default function App() {
           const contactLang = detectContactLang(enriched.email, enriched.name);
           const catalog = smtp.catalogUrl || "https://windoform.de";
           const message = getWhatsAppMessage(contactLang, enriched.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, catalog);
-          if (savedId) addTimelineEvent(savedId, { type: "whatsapp", label: "WhatsApp geöffnet", icon: "whatsapp", phone: waPhone });
-          setTimeout(() => { openWhatsApp(waPhone, message); notify(t("whatsappCopied")); }, 800);
+          setComposeModal({ type: "whatsapp", contact: enriched, savedId, waPhone, isNewScan: true, scanData: enriched });
+          setCustomMsg(message);
         } else {
           notify(t("noEmailAddress"), "warn");
         }
@@ -1040,7 +1040,7 @@ export default function App() {
             {/* Quick Actions */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
               {c.email && <button onClick={() => {
-                setComposeModal({ contact: c, savedId: c.id });
+                setComposeModal({ type: "email", contact: c, savedId: c.id });
                 setCustomMsg("");
               }} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid ${T.bd}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: T.sf }}>
                 <Ic name="mail" size={20} color={T.ok} />
@@ -1049,8 +1049,8 @@ export default function App() {
               {waPhone && <button onClick={() => {
                 const cl = detectContactLang(c.email, c.name);
                 const msg = getWhatsAppMessage(cl, c.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp.catalogUrl || "https://windoform.de");
-                addTimelineEvent(c.id, { type: "whatsapp", label: "WhatsApp geöffnet", icon: "whatsapp", phone: waPhone });
-                openWhatsApp(waPhone, msg); notify(t("whatsappCopied"));
+                setComposeModal({ type: "whatsapp", contact: c, savedId: c.id, waPhone });
+                setCustomMsg(msg);
               }} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid ${T.bd}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: T.sf }}>
                 <Ic name="whatsapp" size={20} color="#25D366" />
                 <span style={{ fontSize: 11, color: T.txM, fontWeight: 600 }}>WhatsApp</span>
@@ -1336,27 +1336,35 @@ export default function App() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(10,22,40,0.85)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
           <div style={{ ...S.card, width: "100%", maxWidth: 500, padding: 24, boxShadow: "0 24px 48px rgba(0,0,0,0.4)", position: "relative" }}>
             <button onClick={() => {
-              const { isNewScan, scanData } = composeModal;
+              const { isNewScan, scanData, type } = composeModal;
               setComposeModal(null);
-              if (isNewScan && scanData) {
-                const waPhone = getBestWhatsAppNumber(scanData);
-                if (waPhone) {
+              if (type === "email" && isNewScan && scanData) {
+                const wPhone = getBestWhatsAppNumber(scanData);
+                if (wPhone) {
                   const cl = detectContactLang(scanData.email, scanData.name);
                   const message = getWhatsAppMessage(cl, scanData.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp.catalogUrl || "https://windoform.de");
-                  setTimeout(() => { openWhatsApp(waPhone, message); notify(t("whatsappCopied")); }, 500);
+                  setTimeout(() => { openWhatsApp(wPhone, message); notify(t("whatsappCopied")); }, 500);
                 }
               }
             }} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", color: T.txM, cursor: "pointer" }}><Ic name="x" size={24} /></button>
             
-            <h3 style={{ fontSize: 18, color: T.tx, marginBottom: 8, marginTop: 0 }}>{t("emailTo")} {composeModal.contact.name}</h3>
-            <p style={{ fontSize: 13, color: T.txM, marginBottom: 20 }}>{t("aiEmailHint")}</p>
+            <h3 style={{ fontSize: 18, color: T.tx, marginBottom: 8, marginTop: 0 }}>{composeModal.type === "whatsapp" ? "WhatsApp:" : t("emailTo")} {composeModal.contact.name}</h3>
+            <p style={{ fontSize: 13, color: T.txM, marginBottom: 20 }}>
+              {composeModal.type === "whatsapp" 
+                ? (lang === "tr" ? "WhatsApp mesajını düzenle ve gönder." : lang === "en" ? "Edit and send WhatsApp message." : "WhatsApp-Nachricht bearbeiten und senden.")
+                : t("aiEmailHint")}
+            </p>
             
-            <label style={S.label}>{t("customMsgLabel")}</label>
+            <label style={S.label}>
+              {composeModal.type === "whatsapp" 
+                ? (lang === "tr" ? "Mesaj Metni" : lang === "en" ? "Message Text" : "Nachrichtentext")
+                : t("customMsgLabel")}
+            </label>
             <textarea
               value={customMsg}
               onChange={(e) => setCustomMsg(e.target.value)}
-              placeholder={t("customMsgPlaceholder")}
-              rows={4}
+              placeholder={composeModal.type === "whatsapp" ? "" : t("customMsgPlaceholder")}
+              rows={composeModal.type === "whatsapp" ? 8 : 4}
               style={{ ...S.input, resize: "vertical", marginBottom: 16 }}
             />
             
@@ -1387,23 +1395,30 @@ export default function App() {
             </button>
 
             <button onClick={async () => {
-              const { contact, isNewScan, scanData, savedId } = composeModal;
+              const { type, contact, isNewScan, scanData, savedId, waPhone } = composeModal;
               setComposeModal(null);
-              const emailResult = await sendEmail(contact.email, contact.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp, customMsg);
-              if (emailResult && emailResult.success) {
-                notify("Email gesendet!", "success");
-                const sid = savedId || contact.id;
-                if (sid) addTimelineEvent(sid, { type: "email", label: "Email gesendet", icon: "mail", to: contact.email, htmlBody: emailResult.htmlBody });
+              
+              if (type === "whatsapp") {
+                openWhatsApp(waPhone, customMsg);
+                if (savedId) addTimelineEvent(savedId, { type: "whatsapp", label: "WhatsApp gesendet", icon: "whatsapp", phone: waPhone });
+                notify(t("whatsappCopied"));
               } else {
-                notify(emailResult?.error || "Fehler beim E-Mail Versand", "error");
-              }
-
-              if (isNewScan && scanData) {
-                const waPhone = getBestWhatsAppNumber(scanData);
-                if (waPhone) {
-                  const cl = detectContactLang(scanData.email, scanData.name);
-                  const message = getWhatsAppMessage(cl, scanData.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp.catalogUrl || "https://windoform.de");
-                  setTimeout(() => { openWhatsApp(waPhone, message); notify(t("whatsappCopied")); }, 1500);
+                const emailResult = await sendEmail(contact.email, contact.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp, customMsg);
+                if (emailResult && emailResult.success) {
+                  notify("Email gesendet!", "success");
+                  const sid = savedId || contact.id;
+                  if (sid) addTimelineEvent(sid, { type: "email", label: "Email gesendet", icon: "mail", to: contact.email, htmlBody: emailResult.htmlBody });
+                } else {
+                  notify(emailResult?.error || "Fehler beim E-Mail Versand", "error");
+                }
+  
+                if (isNewScan && scanData) {
+                  const wPhone = getBestWhatsAppNumber(scanData);
+                  if (wPhone) {
+                    const cl = detectContactLang(scanData.email, scanData.name);
+                    const msg = getWhatsAppMessage(cl, scanData.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp.catalogUrl || "https://windoform.de");
+                    setTimeout(() => { openWhatsApp(wPhone, msg); notify(t("whatsappCopied")); }, 1500);
+                  }
                 }
               }
             }} style={S.btn(T.acc, T.wh)}>
