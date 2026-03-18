@@ -262,6 +262,16 @@ async function buildPdfQuote({ quoteNumber, date, company, salesPerson, userPhon
     (!u || ["Stk.", "Stk", "stk.", "adet", "Adet", "pcs", "Pcs", "piece", "pieces"].includes(u))
       ? l.unitStr : u;
 
+  // Fetch logo image for PDF embedding (fallback to text if unavailable)
+  let logoBuffer = null;
+  try {
+    const logoRes = await fetch("https://raw.githubusercontent.com/Acy19888/fuarbot/main/public/logo.jpg");
+    if (logoRes.ok) {
+      const ab = await logoRes.arrayBuffer();
+      logoBuffer = Buffer.from(ab);
+    }
+  } catch (_) { /* use text fallback */ }
+
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: "A4", margin: 0, autoFirstPage: true });
     const buffers = [];
@@ -275,22 +285,33 @@ async function buildPdfQuote({ quoteNumber, date, company, salesPerson, userPhon
     const cW = W - 2 * mg; // 515.28
 
     // ── HEADER ──────────────────────────────────────────────
-    doc.rect(0, 0, W, 82).fill("#2B5597");
+    doc.rect(0, 0, W, 90).fill("#2B5597");
 
-    doc.font("Helvetica-Bold").fontSize(18).fillColor("#ffffff")
-       .text(s(company).toUpperCase(), mg, 18, { width: 280 });
+    // Logo image (left side) or company name fallback
+    if (logoBuffer) {
+      try {
+        doc.image(logoBuffer, mg, 16, { height: 54, fit: [180, 54] });
+      } catch (_) {
+        doc.font("Helvetica-Bold").fontSize(18).fillColor("#ffffff")
+           .text(s(company).toUpperCase(), mg, 22, { width: 280 });
+      }
+    } else {
+      doc.font("Helvetica-Bold").fontSize(18).fillColor("#ffffff")
+         .text(s(company).toUpperCase(), mg, 22, { width: 280 });
+    }
 
+    // Quote type label below logo
     doc.font("Helvetica").fontSize(11).fillColor("rgba(255,255,255,0.8)")
-       .text(l.title.toUpperCase(), mg, 44, { width: 280 });
+       .text(l.title.toUpperCase(), mg, 74, { width: 280 });
 
     // Quote number & date – right-aligned in header
     doc.font("Helvetica-Bold").fontSize(14).fillColor("#ffffff")
-       .text(quoteNumber, mg, 18, { width: cW, align: "right" });
+       .text(quoteNumber, mg, 22, { width: cW, align: "right" });
 
     doc.font("Helvetica").fontSize(10).fillColor("rgba(255,255,255,0.75)")
-       .text(date, mg, 42, { width: cW, align: "right" });
+       .text(date, mg, 44, { width: cW, align: "right" });
 
-    let y = 98;
+    let y = 106;
 
     // ── TO / FROM ────────────────────────────────────────────
     const halfW = Math.floor(cW / 2) - 10; // ~247
