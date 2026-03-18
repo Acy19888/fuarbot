@@ -125,7 +125,7 @@ export default async function handler(req, res) {
     const {
       to, contactName, messeName, salesPerson,
       smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom,
-      companyName, catalogUrl, emailSignature, avatar
+      companyName, catalogUrl, userPhone, avatar
     } = req.body;
 
     if (!to || !contactName) return res.status(400).json({ error: "Missing: to, contactName" });
