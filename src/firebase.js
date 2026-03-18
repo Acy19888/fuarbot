@@ -192,6 +192,37 @@ export async function syncQuoteToCrm(contactId, quoteData) {
   }
 }
 
+// ---- Migrate existing quotes → crm_quotes (one-time, run from settings) ----
+export async function migrateAllQuotesToCrm(userId) {
+  if (!db || !userId) return 0;
+  try {
+    const { getDocs, query: fbQuery, where: fbWhere, setDoc: fbSetDoc } = await import("firebase/firestore");
+    const q = fbQuery(collection(db, "quotes"), fbWhere("userId", "==", userId));
+    const snap = await getDocs(q);
+    let count = 0;
+    for (const d of snap.docs) {
+      const data = d.data();
+      const docId = data.quoteNumber || d.id;
+      await fbSetDoc(doc(db, "crm_quotes", docId), {
+        contactId:   data.contactId   || "",
+        quoteNumber: data.quoteNumber || "",
+        product:     data.product     || data.lines?.[0]?.product || "",
+        lines:       data.lines       || [],
+        totalNet:    data.totalNet    || 0,
+        currency:    data.currency    || "EUR",
+        status:      data.status      || "draft",
+        createdAt:   data.createdAt   || new Date().toISOString(),
+        sentAt:      data.sentAt      || null,
+      }, { merge: true });
+      count++;
+    }
+    return count;
+  } catch (err) {
+    console.error("Quote migration error:", err);
+    return 0;
+  }
+}
+
 // ---- Quotes (Angebote) ----
 export async function saveQuote(quoteData) {
   if (!db) return null;

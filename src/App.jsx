@@ -1481,6 +1481,37 @@ export default function App() {
               {smtpTesting ? t("sendingTest") : t("sendTestEmail")}
             </button>
           </div>
+
+          {/* ── WindoformDepo CRM: Alte Angebote migrieren ── */}
+          <div style={{ ...S.card, padding: 20, marginBottom: 14 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>
+              {lang === "tr" ? "CRM Senkronizasyonu" : lang === "en" ? "CRM Sync" : "CRM Synchronisation"}
+            </h3>
+            <p style={{ fontSize: 12, color: T.txD, marginBottom: 14 }}>
+              {lang === "tr"
+                ? "Eski teklifler WindoformDepo'da görünmüyorsa buradan aktar. Yeni teklifler otomatik senkronize edilir."
+                : lang === "en"
+                ? "If old quotes are missing in WindoformDepo, migrate them here. New quotes sync automatically."
+                : "Falls ältere Angebote in WindoformDepo fehlen, hier migrieren. Neue Angebote werden automatisch synchronisiert."}
+            </p>
+            <button onClick={async () => {
+              if (!user?.uid) { notify(lang === "tr" ? "Giriş gerekli" : "Anmeldung erforderlich", "error"); return; }
+              notify(lang === "tr" ? "Aktarılıyor…" : lang === "en" ? "Migrating…" : "Wird migriert…", "info");
+              try {
+                const { migrateAllQuotesToCrm } = await import("./firebase.js");
+                const count = await migrateAllQuotesToCrm(user.uid);
+                notify(
+                  lang === "tr" ? `✓ ${count} teklif CRM'e aktarıldı`
+                  : lang === "en" ? `✓ ${count} quotes migrated`
+                  : `✓ ${count} Angebote migriert`,
+                  "success"
+                );
+              } catch(e) { notify("Fehler: " + e.message, "error"); }
+            }} style={{ ...S.btn(`linear-gradient(135deg,#059669,#065f46)`, "#fff"), boxShadow: "0 4px 16px rgba(5,150,105,.25)" }}>
+              {lang === "tr" ? "Eski Teklifleri Aktar" : lang === "en" ? "Migrate Old Quotes" : "Alte Angebote migrieren"}
+            </button>
+          </div>
+
         </div>
       )}
 
