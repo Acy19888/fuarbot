@@ -125,7 +125,7 @@ export default async function handler(req, res) {
     const {
       to, contactName, messeName, salesPerson,
       smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom,
-      companyName, catalogUrl, userPhone, avatar, customMessage
+      companyName, catalogUrl, userPhone, avatar, customMessage, emailTemplates
     } = req.body;
 
     if (!to || !contactName) return res.status(400).json({ error: "Missing: to, contactName" });
@@ -160,8 +160,11 @@ export default async function handler(req, res) {
 <div style="padding:40px;">
 <p style="font-size:16px;color:#333;line-height:1.6;margin:0 0 16px;">${t.greeting}</p>
 ${customMessage ? `<p style="font-size:15px;color:#333;font-weight:500;line-height:1.7;margin:0 0 20px;padding:16px;background:#f0f5fc;border-radius:6px;border-left:4px solid #2B5597;">${customMessage.replace(/\n/g, '<br>')}</p>` : ""}
-<p style="font-size:15px;color:#555;line-height:1.7;margin:0 0 16px;">${t.body1}</p>
-<p style="font-size:15px;color:#555;line-height:1.7;margin:0 0 24px;">${t.body2}</p>
+${emailTemplates && emailTemplates[lang] 
+  ? `<p style="font-size:15px;color:#555;line-height:1.7;margin:0 0 24px;">${emailTemplates[lang].replace(/\n/g, '<br>')}</p>`
+  : `<p style="font-size:15px;color:#555;line-height:1.7;margin:0 0 16px;">${t.body1}</p>
+<p style="font-size:15px;color:#555;line-height:1.7;margin:0 0 24px;">${t.body2}</p>`
+}
 <div style="text-align:center;margin:32px 0;">
 <a href="${catalog}" style="display:inline-block;background:#2B5597;color:#fff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:16px;font-weight:600;box-shadow:0 4px 12px rgba(43,85,151,0.3);">
 ${t.cta}
