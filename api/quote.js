@@ -85,13 +85,15 @@ function buildHtmlQuote({ quoteNumber, date, company, salesPerson, userPhone, co
   const sym = currency === "USD" ? "$" : currency === "GBP" ? "£" : currency === "TRY" ? "₺" : "€";
   const numLocale = currency === "USD" ? "en-US" : currency === "TRY" ? "tr-TR" : lang === "de" ? "de-DE" : lang === "tr" ? "tr-TR" : "en-US";
   const fmt = (n) => Number(n).toLocaleString(numLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + sym;
+  // Normalize unit to language-specific string (AI sometimes returns German "Stk." regardless of language)
+  const normUnit = (u) => (!u || ["Stk.", "Stk", "stk.", "adet", "Adet", "pcs", "Pcs", "piece", "pieces"].includes(u)) ? l.unitStr : u;
 
   const rows = lines.map((line, i) => `
     <tr style="border-bottom:1px solid #f0f0f0;">
       <td style="padding:10px 8px;color:#555;font-size:13px;">${i + 1}</td>
       <td style="padding:10px 8px;color:#333;font-size:13px;line-height:1.5;"><strong>${line.product}</strong>${line.description ? `<br><span style="color:#888;font-size:12px;">${line.description}</span>` : ""}</td>
       <td style="padding:10px 8px;text-align:right;color:#555;font-size:13px;">${line.qty}</td>
-      <td style="padding:10px 8px;text-align:center;color:#555;font-size:13px;">${line.unit || l.unitStr}</td>
+      <td style="padding:10px 8px;text-align:center;color:#555;font-size:13px;">${normUnit(line.unit)}</td>
       <td style="padding:10px 8px;text-align:right;color:#555;font-size:13px;">${fmt(line.unitPrice)}</td>
       <td style="padding:10px 8px;text-align:right;color:#333;font-size:13px;font-weight:600;">${fmt(line.qty * line.unitPrice)}</td>
     </tr>`).join("");
@@ -315,10 +317,11 @@ Instructions:
 - All prices are NET (no VAT) - EXW export pricing
 - CURRENCY: The user specified "${detectedCurrency}" — use this currency code exactly in the response
 - lang: "${lang || "de"}"
+- UNIT: Use "${lang === "tr" ? "Adet" : lang === "en" ? "pcs" : "Stk."}" as the default unit for pieces
 
 Return JSON:
 {
-  "lines": [{ "product": "string", "description": "string including RAL color name", "qty": number, "unit": "Stk.", "unitPrice": number }],
+  "lines": [{ "product": "string", "description": "string including RAL color name", "qty": number, "unit": "${lang === "tr" ? "Adet" : lang === "en" ? "pcs" : "Stk."}", "unitPrice": number }],
   "currency": "${detectedCurrency}",
   "notes": "any additional info or special conditions",
   "subject": "quote email subject line",
