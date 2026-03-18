@@ -171,7 +171,8 @@ ${t.cta}
 <p style="font-size:15px;color:#555;line-height:1.7;margin:24px 0 0;">${t.closing}</p>
 <table style="margin-top:24px;border-top:1px solid #ddd;padding-top:20px;width:100%;border-collapse:collapse;">
   <tr>
-    <td colspan="2" style="padding-bottom: 12px;padding-left:0;padding-right:0;">
+    <td colspan="2" style="padding-bottom: 16px;padding-left:0;padding-right:0;">
+      <img src="https://raw.githubusercontent.com/Acy19888/fuarbot/main/public/logo.jpg" alt="Windoform Logo" style="height:42px;display:block;margin-bottom:10px;" />
       <p style="margin:0;font-size:15px;font-weight:700;color:#2B5597;letter-spacing:0.5px;">WİNDOFORM PVC KAPI VE PENCERE AKSESUARLARI</p>
     </td>
   </tr>
