@@ -97,14 +97,19 @@ function detectContactLang(email, name, address) {
   const n = (name || "").toLowerCase();
   const addr = (address || "").toLowerCase();
 
-  // Germany/Austria/Switzerland
+  // Germany/Austria/Switzerland — check FIRST before Turkish to avoid German umlauts triggering Turkish detection
   const deDomains = [".de", ".at", ".ch"];
-  if (deDomains.some((d) => domain.endsWith(d)) || addr.includes("deutschland") || addr.includes("germany") || addr.includes("austria") || addr.includes("switzerland") || addr.includes("schweiz")) return "de";
+  const deAddressKeywords = ["deutschland", "germany", "austria", "switzerland", "schweiz",
+    "m\u00fcnchen", "munich", "berlin", "hamburg", "frankfurt", "k\u00f6ln", "cologne",
+    "stuttgart", "d\u00fcsseldorf", "n\u00fcrnberg", "nuremberg", "dresden", "wien", "vienna",
+    "z\u00fcrich", "zurich", "bavaria", "bayern"];
+  if (deDomains.some((d) => domain.endsWith(d)) || deAddressKeywords.some((k) => addr.includes(k))) return "de";
 
-  // Turkey
+  // Turkey — using ONLY Turkish-specific chars (NOT ö/ü which are also German!)
   const trDomains = [".tr", ".com.tr"];
-  const trChars = /[çğıöşüÇĞİÖŞÜ]/;
-  if (trDomains.some((d) => domain.endsWith(d)) || trChars.test(n) || addr.includes("turkey") || addr.includes("türkiye") || addr.includes("turkiye") || addr.includes("istanbul")) return "tr";
+  const trChars = /[çğışÇĞİŞ]/;  // ı=dotless-i, İ=dotted capital I — unique to Turkish
+  const trKeywords = ["turkey", "t\u00fcrkiye", "turkiye", "istanbul", "ankara", "izmir", "antalya"];
+  if (trDomains.some((d) => domain.endsWith(d)) || trChars.test(n) || trKeywords.some((k) => addr.includes(k))) return "tr";
 
   // Spain/Mexico
   if (domain.endsWith(".es") || domain.endsWith(".mx") || addr.includes("spain") || addr.includes("españa") || addr.includes("mexico")) return "es";
