@@ -1740,12 +1740,8 @@ export default function App() {
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={async () => {
                 try {
-                  notify(lang === "tr" ? "PDF hazırlanıyor..." : "PDF wird erstellt...", "info");
+                  notify(lang === "tr" ? "PDF indiriliyor..." : "PDF wird heruntergeladen...", "info");
                   const html2pdf = (await import('html2pdf.js')).default;
-                  const parser = new DOMParser();
-                  const doc = parser.parseFromString(quoteViewerModal.htmlQuote, 'text/html');
-                  const element = doc.body.firstChild; // The wrapper div
-
                   const opt = {
                     margin:       0,
                     filename:     `${quoteViewerModal.quoteNumber}.pdf`,
@@ -1753,14 +1749,35 @@ export default function App() {
                     html2canvas:  { scale: 2, useCORS: true },
                     jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
                   };
-                  
-                  html2pdf().set(opt).from(element).outputPdf('blob').then(async (pdfBlob) => {
+                  html2pdf().set(opt).from(quoteViewerModal.htmlQuote).save().then(() => {
+                    notify(lang === "tr" ? "Başarılı" : "Erfolgreich", "success");
+                  });
+                } catch (err) {
+                  console.error(err);
+                  notify("Fehler beim Download", "error");
+                }
+              }} style={{ background: T.acc, color: T.wh, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                <Ic name="download" size={14} color={T.wh} /> {lang === "tr" ? "İndir" : lang === "en" ? "Download" : "Download"}
+              </button>
+
+              <button onClick={async () => {
+                try {
+                  notify(lang === "tr" ? "PDF hazırlanıyor..." : "PDF wird zum Teilen vorbereitet...", "info");
+                  const html2pdf = (await import('html2pdf.js')).default;
+                  const opt = {
+                    margin:       0,
+                    filename:     `${quoteViewerModal.quoteNumber}.pdf`,
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true },
+                    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+                  };
+                  html2pdf().set(opt).from(quoteViewerModal.htmlQuote).outputPdf('blob').then(async (pdfBlob) => {
                     const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                      try {
-                        await navigator.share({ title: opt.filename, files: [file] });
-                      } catch (err) { console.error(err); }
+                      await navigator.share({ title: opt.filename, files: [file] });
                     } else {
+                      notify(lang === "tr" ? "Cihazınız dosya paylaşımını desteklemiyor." : "Dein Gerät unterstützt das direkte Teilen von Dateien nicht.", "warn");
+                      // Standard download fallback
                       const url = URL.createObjectURL(pdfBlob);
                       const a = document.createElement('a');
                       a.href = url; a.download = opt.filename; a.click();
@@ -1769,13 +1786,10 @@ export default function App() {
                   });
                 } catch (err) {
                   console.error(err);
-                  notify("Fehler beim PDF Export", "error");
+                  notify("Fehler beim Teilen", "error");
                 }
               }} style={{ background: "#25D366", color: T.wh, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                <Ic name="download" size={14} color={T.wh} /> {lang === "tr" ? "Paylaş / İndir" : lang === "en" ? "Share / Download" : "Teilen / Download"}
-              </button>
-              <button onClick={() => window.print()} style={{ background: T.bg, color: T.txM, border: `1px solid ${T.bd}`, borderRadius: 8, padding: "8px 12px", fontSize: 13, cursor: "pointer", fontWeight: 600 }} title="Drucken">
-                🖨
+                <Ic name="send" size={14} color={T.wh} /> {lang === "tr" ? "Paylaş" : lang === "en" ? "Share" : "Teilen"}
               </button>
               <button onClick={() => setQuoteViewerModal(null)} style={{ background: T.bg, border: `1px solid ${T.bd}`, borderRadius: 8, padding: "8px 14px", cursor: "pointer", color: T.txM }}>✕</button>
             </div>
