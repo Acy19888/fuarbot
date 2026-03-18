@@ -1,6 +1,5 @@
-// api/ai.js
+// api/ai.js – Vercel Serverless Function
 export default async function handler(req, res) {
-  // Add CORS headers for local testing
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -10,7 +9,7 @@ export default async function handler(req, res) {
 
   try {
     const { prompt, contactName, language } = req.body;
-    
+
     if (!prompt) {
       return res.status(400).json({ error: "No prompt provided" });
     }
@@ -20,55 +19,68 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "GEMINI_API_KEY is not configured in Vercel environment." });
     }
 
-    // Determine the language string for the prompt
     const langMap = {
-      en: "Englisch",
-      tr: "Türkisch",
-      de: "Deutsch"
+      en: "English",
+      tr: "Turkish",
+      de: "German",
+      es: "Spanish",
+      fr: "French",
+      it: "Italian"
     };
-    const targetLang = langMap[language] || "Deutsch";
+    const targetLang = langMap[language] || "German";
 
-    const systemInstruction = `Du bist ein hochprofessioneller B2B-Vertriebsassistent für das Unternehmen Windoform. 
-Die Eingabe des Nutzers ist ein Entwurf oder stichpunktartige Notizen. Deine zwingende Aufgabe ist es, diesen Text signifikant zu verbessern, professioneller zu formulieren und alle Fehler zu korrigieren.
-Falls es sich nur um Stichpunkte handelt, wandle sie in 1-4 fließende, exzellente Sätze um.
-Die Sätze müssen zwingend in dieser Zielsprache verfasst werden: ${targetLang}. 
-WICHTIG: Antworte NUR mit den verbesserten Sätzen selbst (ohne Anrede, ohne Grußformel, ohne Erklärungen), da dein Text exakt so in die Mitte einer bestehenden E-Mail-Vorlage integriert wird.`;
+    // Combine system instructions + user content into a single prompt
+    // This avoids any issues with system_instruction API field support
+    const fullPrompt = `You are a highly professional B2B sales assistant for the company Windoform.
+The user's input is a rough draft or bullet-point notes. Your mandatory task is to significantly improve this text, make it more professional, and correct all errors.
+If it is only bullet points, convert them into 1-4 fluent, excellent sentences.
+The sentences MUST be written in this target language: ${targetLang}.
+IMPORTANT: Reply ONLY with the improved sentences themselves (no greeting, no closing, no explanations), as your text will be embedded directly into the middle of an existing email template.
 
-    const userPrompt = `Kunde: ${contactName || "Unbekannt"}\nEntwurf/Notizen des Nutzers:\n${prompt}`;
+Customer name: ${contactName || "Unknown"}
+User's draft/notes:
+${prompt}`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: systemInstruction }]
-        },
-        contents: [
-          {
-            parts: [{ text: userPrompt }]
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: fullPrompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 400
           }
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 300
-        }
-      })
-    });
+        })
+      }
+    );
+
+    const responseText = await response.text();
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Gemini API error:", errorText);
-      throw new Error(`Failed to communicate with Gemini API: ${response.status}`);
+      console.error("Gemini API error:", response.status, responseText);
+      return res.status(500).json({ error: `Gemini API error ${response.status}`, details: responseText.slice(0, 300) });
     }
 
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "Fehler beim Generieren";
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error("JSON parse error:", responseText);
+      return res.status(500).json({ error: "Invalid JSON from Gemini API" });
+    }
+
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!text) {
+      console.error("Empty Gemini response:", JSON.stringify(data));
+      return res.status(500).json({ error: "Gemini returned an empty response", raw: JSON.stringify(data).slice(0, 300) });
+    }
 
     return res.status(200).json({ result: text });
+
   } catch (error) {
     console.error("AI handler error:", error);
-    return res.status(500).json({ error: "Ein Fehler ist aufgetreten", details: error.message });
+    return res.status(500).json({ error: "Server error", details: error.message });
   }
 }
