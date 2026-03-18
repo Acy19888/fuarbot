@@ -171,21 +171,28 @@ export async function uploadCustomerAvatarBase64(contactId, dataUrl) {
 export function isFirebaseConfigured() { return !!db; }
 
 // ---- CRM Quotes Sync (crm_quotes collection — readable without auth for WindoformDepo) ----
-export async function syncQuoteToCrm(contactId, quoteData) {
+export async function syncQuoteToCrm(contactId, quoteData, contactData) {
   if (!db) return;
   try {
     const { setDoc } = await import("firebase/firestore");
     const docId = quoteData.quoteNumber || `${contactId}_${Date.now()}`;
     await setDoc(doc(db, "crm_quotes", docId), {
       contactId,
-      quoteNumber:  quoteData.quoteNumber  || "",
-      product:      quoteData.product      || quoteData.lines?.[0]?.product || "",
-      lines:        quoteData.lines        || [],
-      totalNet:     quoteData.totalNet     || 0,
-      currency:     quoteData.currency     || "EUR",
-      status:       quoteData.status       || "draft",
-      createdAt:    quoteData.createdAt    || new Date().toISOString(),
-      sentAt:       quoteData.sentAt       || null,
+      quoteNumber:    quoteData.quoteNumber    || "",
+      product:        quoteData.product        || quoteData.lines?.[0]?.product || "",
+      lines:          quoteData.lines          || [],
+      totalNet:       quoteData.totalNet       || 0,
+      totalGross:     quoteData.totalGross     || quoteData.totalNet || 0,
+      currency:       quoteData.currency       || "EUR",
+      status:         quoteData.status         || "draft",
+      createdAt:      quoteData.createdAt      || new Date().toISOString(),
+      sentAt:         quoteData.sentAt         || null,
+      // Recipient snapshot for PDF preview in WindoformDepo
+      contactName:    contactData?.name        || "",
+      contactCompany: contactData?.company     || "",
+      contactEmail:   contactData?.email       || "",
+      contactPhone:   contactData?.phone || contactData?.mobile || "",
+      contactAddress: contactData?.address     || "",
     }, { merge: true });
   } catch (err) {
     console.error("CRM quote sync error:", err);
