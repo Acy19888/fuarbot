@@ -1,5 +1,6 @@
 // api/quote.js – AI-powered quote generation and sending
 import nodemailer from "nodemailer";
+import PDFDocument from "pdfkit";
 
 // ============================================================
 // RAL Color Dictionary (most common codes)
@@ -198,6 +199,265 @@ function buildHtmlQuote({ quoteNumber, date, company, salesPerson, userPhone, co
 }
 
 // ============================================================
+// Sanitize text for PDFKit built-in fonts (Windows-1252 range)
+// Turkish: ş/Ş→s/S, ğ/Ğ→g/G, ı→i, İ→I — ü ö ç are fine in Win-1252
+// ============================================================
+function sanitizeForPdf(str) {
+  if (!str) return "";
+  return str
+    .replace(/ş/g, "s").replace(/Ş/g, "S")
+    .replace(/ğ/g, "g").replace(/Ğ/g, "G")
+    .replace(/ı/g, "i").replace(/İ/g, "I")
+    .replace(/₺/g, "TRY")
+    .replace(/[^\x00-\xFF]/g, "?");
+}
+
+// ============================================================
+// Short email body for PDF-attachment emails
+// ============================================================
+function buildEmailBody({ company, salesPerson, quoteNumber, lang }) {
+  const sp = salesPerson || company;
+  const bodies = {
+    de: {
+      text: `Sehr geehrte Damen und Herren,\n\nIhr Angebot ${quoteNumber} finden Sie im Anhang.\n\nMit freundlichen Grüßen\n${sp}\n${company}`,
+      html: `<p>Sehr geehrte Damen und Herren,</p><p>Ihr Angebot <strong>${quoteNumber}</strong> finden Sie im Anhang.</p><p>Mit freundlichen Grüßen<br><strong>${sp}</strong><br>${company}</p>`
+    },
+    tr: {
+      text: `Sayin Yetkili,\n\nTeklifiniz (${quoteNumber}) ekte yer almaktadir.\n\nSaygilarimla\n${sp}\n${company}`,
+      html: `<p>Sayın Yetkili,</p><p>Teklifiniz (<strong>${quoteNumber}</strong>) ekte yer almaktadır.</p><p>Saygılarımla<br><strong>${sp}</strong><br>${company}</p>`
+    },
+    en: {
+      text: `Dear Sir or Madam,\n\nPlease find your quotation ${quoteNumber} attached.\n\nBest regards\n${sp}\n${company}`,
+      html: `<p>Dear Sir or Madam,</p><p>Please find your quotation <strong>${quoteNumber}</strong> attached.</p><p>Best regards<br><strong>${sp}</strong><br>${company}</p>`
+    }
+  };
+  return bodies[lang] || bodies.en;
+}
+
+// ============================================================
+// Build A4 PDF quote with pdfkit (server-side, no binary deps)
+// ============================================================
+async function buildPdfQuote({ quoteNumber, date, company, salesPerson, userPhone, contact, lines, totalNet, currency, notes, lang }) {
+  const L = {
+    de: { title: "Angebot", pos: "Pos.", product: "Produkt / Beschreibung", qty: "Menge", unit: "Einheit", unitStr: "Stk.", unitPrice: "Einzelpreis", total: "Gesamtpreis", net: "Gesamtbetrag (Netto)", validity: "Gültigkeit", validityVal: "30 Tage", delivery: "Lieferbedingungen", deliveryVal: "EXW (Ex Works)", payment: "Zahlungsbedingungen", paymentVal: "30 Tage netto", greeting: "Sehr geehrte Damen und Herren,", closing: "Mit freundlichen Grüßen", to: "Angeboten an", from: "Von" },
+    tr: { title: "Teklif", pos: "Pos.", product: "Urun / Aciklama", qty: "Miktar", unit: "Birim", unitStr: "Adet", unitPrice: "Birim Fiyat", total: "Toplam Fiyat", net: "Toplam Tutar (Net)", validity: "Gecerlilik", validityVal: "30 gun", delivery: "Teslimat Sekli", deliveryVal: "EXW (Ex Works)", payment: "Odeme Kosullari", paymentVal: "30 gun net", greeting: "Sayin Yetkili,", closing: "Saygilarimla", to: "Teklif Sunulan", from: "Teklifi Sunan" },
+    en: { title: "Quotation", pos: "Pos.", product: "Product / Description", qty: "Qty", unit: "Unit", unitStr: "pcs", unitPrice: "Unit Price", total: "Total", net: "Total Amount (Net)", validity: "Validity", validityVal: "30 days", delivery: "Delivery Terms", deliveryVal: "EXW (Ex Works)", payment: "Payment Terms", paymentVal: "30 days net", greeting: "Dear Sir or Madam,", closing: "Best regards", to: "Offered to", from: "From" }
+  };
+  const l = L[lang] || L.en;
+  const s = sanitizeForPdf;
+
+  // Currency formatting — avoid ₺ (not in Helvetica/Win-1252)
+  const fmtAmt = (n) => {
+    const abs = Number(n);
+    const dec = (lang === "de" || lang === "tr")
+      ? abs.toFixed(2).replace(".", ",")
+      : abs.toFixed(2);
+    if (currency === "USD") return "$ " + dec;
+    if (currency === "TRY") return dec + " TRY";
+    if (currency === "GBP") return dec + " GBP";
+    return dec + " EUR";
+  };
+
+  const normUnit = (u) =>
+    (!u || ["Stk.", "Stk", "stk.", "adet", "Adet", "pcs", "Pcs", "piece", "pieces"].includes(u))
+      ? l.unitStr : u;
+
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: "A4", margin: 0, autoFirstPage: true });
+    const buffers = [];
+    doc.on("data", chunk => buffers.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(buffers)));
+    doc.on("error", reject);
+
+    const W = 595.28;
+    const H = 841.89;
+    const mg = 40;
+    const cW = W - 2 * mg; // 515.28
+
+    // ── HEADER ──────────────────────────────────────────────
+    doc.rect(0, 0, W, 82).fill("#2B5597");
+
+    doc.font("Helvetica-Bold").fontSize(18).fillColor("#ffffff")
+       .text(s(company).toUpperCase(), mg, 18, { width: 280 });
+
+    doc.font("Helvetica").fontSize(11).fillColor("rgba(255,255,255,0.8)")
+       .text(l.title.toUpperCase(), mg, 44, { width: 280 });
+
+    // Quote number & date – right-aligned in header
+    doc.font("Helvetica-Bold").fontSize(14).fillColor("#ffffff")
+       .text(quoteNumber, mg, 18, { width: cW, align: "right" });
+
+    doc.font("Helvetica").fontSize(10).fillColor("rgba(255,255,255,0.75)")
+       .text(date, mg, 42, { width: cW, align: "right" });
+
+    let y = 98;
+
+    // ── TO / FROM ────────────────────────────────────────────
+    const halfW = Math.floor(cW / 2) - 10; // ~247
+    const col2X = mg + halfW + 20;
+
+    doc.font("Helvetica").fontSize(8).fillColor("#aaaaaa")
+       .text(l.to.toUpperCase(), mg, y, { width: halfW });
+    doc.text(l.from.toUpperCase(), col2X, y, { width: halfW });
+
+    y += 13;
+    let leftY = y;
+    let rightY = y;
+
+    // Contact (left)
+    doc.font("Helvetica-Bold").fontSize(11).fillColor("#333333")
+       .text(s(contact.name || ""), mg, leftY, { width: halfW });
+    leftY += 14;
+    doc.font("Helvetica").fontSize(10).fillColor("#555555");
+    if (contact.company) { doc.text(s(contact.company), mg, leftY, { width: halfW }); leftY += 13; }
+    if (contact.address) {
+      contact.address.split("\n").forEach(line => {
+        doc.text(s(line), mg, leftY, { width: halfW }); leftY += 13;
+      });
+    }
+    if (contact.email) { doc.text(contact.email, mg, leftY, { width: halfW }); leftY += 13; }
+
+    // From (right)
+    doc.font("Helvetica-Bold").fontSize(11).fillColor("#333333")
+       .text(s(company), col2X, rightY, { width: halfW });
+    rightY += 14;
+    doc.font("Helvetica").fontSize(10).fillColor("#555555")
+       .text(s(salesPerson || ""), col2X, rightY, { width: halfW });
+    rightY += 13;
+    if (userPhone) { doc.text(s(userPhone), col2X, rightY, { width: halfW }); rightY += 13; }
+
+    y = Math.max(leftY, rightY) + 10;
+
+    // Thin separator
+    doc.moveTo(mg, y).lineTo(W - mg, y).lineWidth(0.5).strokeColor("#dddddd").stroke();
+    y += 14;
+
+    // ── GREETING ─────────────────────────────────────────────
+    doc.font("Helvetica").fontSize(10).fillColor("#333333")
+       .text(s(l.greeting), mg, y, { width: cW });
+    y += 22;
+
+    // ── PRODUCTS TABLE ────────────────────────────────────────
+    // Column layout: pos(28) product(200) qty(40) unit(45) unitPrice(98) total(104) = 515
+    const cols = [
+      { label: l.pos,       x: mg,           w: 28,  align: "center" },
+      { label: l.product,   x: mg + 28,      w: 200, align: "left"   },
+      { label: l.qty,       x: mg + 228,     w: 40,  align: "right"  },
+      { label: l.unit,      x: mg + 268,     w: 45,  align: "center" },
+      { label: l.unitPrice, x: mg + 313,     w: 98,  align: "right"  },
+      { label: l.total,     x: mg + 411,     w: 104, align: "right"  }
+    ];
+
+    // Header row
+    doc.rect(mg, y, cW, 22).fill("#2B5597");
+    doc.font("Helvetica-Bold").fontSize(9).fillColor("#ffffff");
+    cols.forEach(col => {
+      doc.text(col.label, col.x + 3, y + 7, { width: col.w - 6, align: col.align });
+    });
+    y += 22;
+
+    // Data rows
+    lines.forEach((line, i) => {
+      const hasDesc = line.description && line.description.trim();
+      const rowH = hasDesc ? 32 : 22;
+
+      doc.rect(mg, y, cW, rowH).fill(i % 2 === 0 ? "#ffffff" : "#f6f8fc");
+      doc.moveTo(mg, y + rowH).lineTo(W - mg, y + rowH)
+         .lineWidth(0.3).strokeColor("#e0e0e0").stroke();
+
+      const tY = y + 7;
+
+      // Pos
+      doc.font("Helvetica").fontSize(9).fillColor("#888888")
+         .text(String(i + 1), cols[0].x + 3, tY, { width: cols[0].w - 6, align: "center" });
+
+      // Product + optional description
+      doc.font("Helvetica-Bold").fontSize(9).fillColor("#222222")
+         .text(s(line.product), cols[1].x + 3, tY, { width: cols[1].w - 6 });
+      if (hasDesc) {
+        doc.font("Helvetica").fontSize(8).fillColor("#888888")
+           .text(s(line.description), cols[1].x + 3, y + 20, { width: cols[1].w - 6 });
+      }
+
+      // Qty
+      doc.font("Helvetica").fontSize(9).fillColor("#555555")
+         .text(String(line.qty), cols[2].x + 3, tY, { width: cols[2].w - 6, align: "right" });
+
+      // Unit
+      doc.text(normUnit(line.unit), cols[3].x + 3, tY, { width: cols[3].w - 6, align: "center" });
+
+      // Unit price
+      doc.text(fmtAmt(line.unitPrice), cols[4].x + 3, tY, { width: cols[4].w - 6, align: "right" });
+
+      // Total (bold)
+      doc.font("Helvetica-Bold").fontSize(9).fillColor("#222222")
+         .text(fmtAmt(line.qty * line.unitPrice), cols[5].x + 3, tY, { width: cols[5].w - 6, align: "right" });
+
+      y += rowH;
+    });
+
+    y += 8;
+
+    // ── NET TOTAL ─────────────────────────────────────────────
+    const totBoxX = mg + 260;
+    const totBoxW = cW - 260;
+    doc.rect(totBoxX, y, totBoxW, 28).fill("#eef2fb");
+    doc.font("Helvetica-Bold").fontSize(12).fillColor("#2B5597")
+       .text(l.net, totBoxX + 6, y + 8, { width: totBoxW - 12 });
+    doc.text(fmtAmt(totalNet), totBoxX + 6, y + 8, { width: totBoxW - 12, align: "right" });
+    y += 38;
+
+    // ── TERMS ────────────────────────────────────────────────
+    doc.rect(mg, y, cW, 46).fill("#f9f9f9");
+
+    const tLabelW = 100;
+    const tValW = halfW - tLabelW - 4;
+
+    doc.font("Helvetica").fontSize(9).fillColor("#999999")
+       .text(l.validity + ":", mg + 8, y + 8, { width: tLabelW });
+    doc.fillColor("#333333")
+       .text(l.validityVal, mg + 8 + tLabelW, y + 8, { width: tValW });
+
+    doc.fillColor("#999999")
+       .text(l.delivery + ":", col2X, y + 8, { width: tLabelW });
+    doc.fillColor("#333333")
+       .text(l.deliveryVal, col2X + tLabelW, y + 8, { width: tValW });
+
+    doc.fillColor("#999999")
+       .text(l.payment + ":", mg + 8, y + 26, { width: tLabelW });
+    doc.fillColor("#333333")
+       .text(l.paymentVal, mg + 8 + tLabelW, y + 26, { width: tValW });
+
+    y += 56;
+
+    // ── NOTES ────────────────────────────────────────────────
+    if (notes && notes.trim()) {
+      doc.rect(mg, y, 3, 20).fill("#2B5597"); // bar (height adjusted below visually)
+      doc.font("Helvetica").fontSize(10).fillColor("#555555")
+         .text(s(notes), mg + 12, y, { width: cW - 12 });
+      y += 32;
+    }
+
+    // ── CLOSING ──────────────────────────────────────────────
+    doc.font("Helvetica").fontSize(10).fillColor("#333333")
+       .text(s(l.closing) + ",", mg, y);
+    y += 14;
+    doc.font("Helvetica-Bold").fontSize(11).fillColor("#333333")
+       .text(s(salesPerson || company), mg, y);
+    y += 15;
+    doc.font("Helvetica").fontSize(10).fillColor("#999999")
+       .text(s(company), mg, y);
+
+    // ── FOOTER ───────────────────────────────────────────────
+    doc.rect(0, H - 30, W, 30).fill("#f5f5f5");
+    doc.font("Helvetica").fontSize(9).fillColor("#aaaaaa")
+       .text(`${quoteNumber}  ·  ${date}  ·  ${s(company)}`, 0, H - 18, { align: "center", width: W });
+
+    doc.end();
+  });
+}
+
+// ============================================================
 // Product Database + Keyword Lookup
 // ============================================================
 const WINDOFORM_PRODUCTS = [
@@ -378,10 +638,22 @@ Return JSON:
     const product = lines[0]?.product || userRequest.slice(0, 60);
     const subject = parsed.subject || `Angebot ${quoteNumber} – ${product}`;
 
-    // Send email if requested
+    // Send email if requested — PDF as attachment, short text body
     let emailSent = false;
     if (sendEmail && smtpHost && smtpUser && smtpPass && contact.email) {
       try {
+        // Generate A4 PDF for attachment
+        const pdfBuffer = await buildPdfQuote({
+          quoteNumber, date, company, salesPerson: salesPerson || company,
+          userPhone: userPhone || "", contact, lines: enhancedLines,
+          totalNet, currency, notes: parsed.notes || "", lang: lang || "de"
+        });
+
+        const emailBody = buildEmailBody({
+          company, salesPerson: salesPerson || company,
+          quoteNumber, lang: lang || "de"
+        });
+
         const transporter = nodemailer.createTransport({
           host: smtpHost, port: parseInt(smtpPort) || 465,
           secure: (parseInt(smtpPort) || 465) === 465,
@@ -390,7 +662,15 @@ Return JSON:
         });
         await transporter.sendMail({
           from: `"${company}" <${smtpFrom || smtpUser}>`,
-          to: contact.email, subject, html: htmlQuote
+          to: contact.email,
+          subject,
+          text: emailBody.text,
+          html: emailBody.html,
+          attachments: [{
+            filename: `${quoteNumber}.pdf`,
+            content: pdfBuffer,
+            contentType: "application/pdf"
+          }]
         });
         emailSent = true;
       } catch (emailErr) {
