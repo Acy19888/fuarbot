@@ -45,7 +45,7 @@ IMPORTANT: Reply ONLY with the improved sentences themselves (no greeting, no cl
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-20250514",
+        model: "claude-sonnet-4-20250514",
         max_tokens: 400,
         system: systemPrompt,
         messages: [{ role: "user", content: userMessage }]
