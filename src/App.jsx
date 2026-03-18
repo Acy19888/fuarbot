@@ -4,7 +4,7 @@ import {
   updateContactInFirebase, deleteContactFromFirebase,
   loginUser, registerUser, logoutUser, onAuthChange,
   saveUserSettings, getUserSettings, addTimelineEvent, syncToCrm,
-  uploadCustomerAvatarBase64, saveQuote, getContactQuotes, subscribeToContactQuotes, subscribeToAllQuotes
+  uploadCustomerAvatarBase64, saveQuote, syncQuoteToCrm, getContactQuotes, subscribeToContactQuotes, subscribeToAllQuotes
 } from "./firebase.js";
 import { detectSystemLanguage, useTranslation } from "./i18n.js";
 
@@ -2040,6 +2040,7 @@ export default function App() {
                   };
                   const qid = await saveQuote(qData);
                   if (qid) {
+                    syncQuoteToCrm(angebotModal.savedId || angebotModal.contact.id, qData);
                     addTimelineEvent(angebotModal.savedId || angebotModal.contact.id, {
                       type: "quote", icon: "file-text",
                       label: `${t("timelineQuoteSaved")}: ${quotePreview.quoteNumber} | ${editableLines[0]?.product || quotePreview.product} | ${finalTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${quotePreview.currency}`,
@@ -2088,6 +2089,7 @@ export default function App() {
                           status: data.emailSent ? "sent" : "draft", sentAt: data.emailSent ? new Date().toISOString() : null
                         };
                         const qid = await saveQuote(qData);
+                        syncQuoteToCrm(angebotModal.savedId || angebotModal.contact.id, qData);
                         addTimelineEvent(angebotModal.savedId || angebotModal.contact.id, {
                           type: "quote", icon: "file-text",
                           label: `${t("timelineQuoteSent")}: ${data.quoteNumber} | ${editableLines[0]?.product || data.product} | ${finalTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${data.currency}`,
