@@ -254,6 +254,7 @@ export default function App() {
   const [current, setCurrent] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [capturedImg, setCapturedImg] = useState(null);
+  const [capturedCustomerPic, setCapturedCustomerPic] = useState(null);
   const [searchQ, setSearchQ] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [toast, setToast] = useState(null);
@@ -439,6 +440,19 @@ export default function App() {
 
     const contactData = { ...enriched, emailSent: false, whatsappSent: false, savedAt: new Date().toISOString() };
 
+    // Upload customer photo if taken
+    if (capturedCustomerPic) {
+      try {
+        const { getStorage, ref, uploadString, getDownloadURL } = await import("firebase/storage");
+        const tempId = editingContact?.id || `new_${Date.now()}`;
+        const sRef = ref(getStorage(), `customers/${tempId}/avatar_${Date.now()}.jpg`);
+        await uploadString(sRef, capturedCustomerPic, "data_url");
+        contactData.customerAvatar = await getDownloadURL(sRef);
+      } catch (e) {
+        console.error("Avatar upload failed", e);
+      }
+    }
+
     // If editing existing contact, update instead of create
     let savedId = editingContact?.id;
     if (editingContact) {
@@ -476,7 +490,7 @@ export default function App() {
       notify(t("contactSaved"));
     }
 
-    setCurrent(null); setCapturedImg(null); setEditingContact(null); setShowDupeWarning(null); setView("home");
+    setCurrent(null); setCapturedImg(null); setCapturedCustomerPic(null); setEditingContact(null); setShowDupeWarning(null); setView("home");
   };
 
 
@@ -825,6 +839,27 @@ export default function App() {
             <button onClick={() => { setCurrent(null); setEditingContact(null); setView(editingContact ? "contacts" : "home"); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><Ic name="back" size={22} color={T.txM} /></button>
             <h2 style={{ fontSize: 20, fontWeight: 700 }}>{editingContact ? "Kontakt bearbeiten" : "Kontakt prüfen"}</h2>
           </div>
+
+          {/* Customer Avatar Capture */}
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 24, flexDirection: "column", alignItems: "center" }}>
+            <input type="file" accept="image/*" capture="environment" id="customerPicInput" style={{ display: "none" }} onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) {
+                const r = new FileReader();
+                r.onload = (ev) => setCapturedCustomerPic(ev.target.result);
+                r.readAsDataURL(f);
+              }
+            }} />
+            <label htmlFor="customerPicInput" style={{ ...S.card, width: 88, height: 88, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", padding: 0, border: `2px dashed ${T.acc}`, marginBottom: 8 }}>
+              {capturedCustomerPic || current.customerAvatar ? (
+                <img src={capturedCustomerPic || current.customerAvatar} alt="Kunde" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <Ic name="camera" size={32} color={T.acc} />
+              )}
+            </label>
+            <span style={{ fontSize: 12, color: T.txM, fontWeight: 600 }}>{capturedCustomerPic || current.customerAvatar ? "Foto ändern" : "Kundenfoto hinzufügen"}</span>
+          </div>
+
           {capturedImg && <div style={{ ...S.card, overflow: "hidden", marginBottom: 20, height: 140 }}><img src={capturedImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div>}
           <div style={{ ...S.card, padding: 20, marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}><Ic name={editingContact ? "edit" : "zap"} size={14} color={editingContact ? T.accS : T.ok} /><span style={{ fontSize: 11, fontWeight: 700, color: editingContact ? T.accS : T.ok, textTransform: "uppercase", letterSpacing: ".06em" }}>{editingContact ? "Bearbeiten" : "AI-erkannt"}</span></div>
@@ -893,7 +928,11 @@ export default function App() {
               onMouseOut={(e) => e.currentTarget.style.borderColor = T.bd}
             >
               <div style={{ display: "flex", gap: 12 }}>
-                <div style={{ width: 46, height: 46, borderRadius: 12, flexShrink: 0, background: `linear-gradient(135deg,${T.sf2},${T.bd})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: T.acc }}>{c.name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}</div>
+                {c.customerAvatar ? (
+                  <img src={c.customerAvatar} style={{ width: 46, height: 46, borderRadius: 12, objectFit: "cover", flexShrink: 0 }} alt="" />
+                ) : (
+                  <div style={{ width: 46, height: 46, borderRadius: 12, flexShrink: 0, background: `linear-gradient(135deg,${T.sf2},${T.bd})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: T.acc }}>{c.name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}</div>
+                )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 2 }}>{c.name}</p>
                   <p style={{ fontSize: 12, color: T.accS, fontWeight: 500 }}>{c.position}</p>
@@ -933,9 +972,13 @@ export default function App() {
 
             {/* Avatar + Info */}
             <div style={{ ...S.card, padding: 24, marginBottom: 14, textAlign: "center" }}>
-              <div style={{ width: 72, height: 72, borderRadius: 20, background: `linear-gradient(135deg,${T.acc},#1E4080)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, color: T.wh, margin: "0 auto 16px", boxShadow: `0 8px 24px rgba(43,85,151,.35)` }}>
-                {c.name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-              </div>
+              {c.customerAvatar ? (
+                <img src={c.customerAvatar} style={{ width: 88, height: 88, borderRadius: "50%", objectFit: "cover", margin: "0 auto 16px", display: "block", boxShadow: `0 8px 24px rgba(43,85,151,.35)`, border: `2px solid ${T.bd}` }} alt="" />
+              ) : (
+                <div style={{ width: 72, height: 72, borderRadius: 20, background: `linear-gradient(135deg,${T.acc},#1E4080)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, color: T.wh, margin: "0 auto 16px", boxShadow: `0 8px 24px rgba(43,85,151,.35)` }}>
+                  {c.name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                </div>
+              )}
               <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>{c.name}</h3>
               {c.position && <p style={{ fontSize: 13, color: T.accS, fontWeight: 600, marginBottom: 2 }}>{c.position}</p>}
               {c.company && <p style={{ fontSize: 14, color: T.txM, marginBottom: 12 }}>{c.company}</p>}
