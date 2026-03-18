@@ -103,7 +103,7 @@ export async function addTimelineEvent(contactId, event) {
       if (event.to) text += ` (An: ${event.to})`;
       if (event.phone) text += ` (Tel: ${event.phone})`;
   
-      await addDoc(collection(db, "crm_activities"), {
+      const activityData = {
         parentId: contactId,
         parentType: "kunde",
         type: typeMap[event.type] || "note",
@@ -111,7 +111,11 @@ export async function addTimelineEvent(contactId, event) {
         createdBy: auth.currentUser.displayName || auth.currentUser.email || "Fuarbot",
         createdByUid: auth.currentUser.uid,
         createdAt: timestamp
-      });
+      };
+      if (event.htmlBody) activityData.htmlBody = event.htmlBody;
+      if (event.message) activityData.text = text + "\n\n" + event.message;
+
+      await addDoc(collection(db, "crm_activities"), activityData);
     }
   } catch (err) {
     console.error("Timeline event error:", err);
@@ -135,6 +139,7 @@ export async function syncToCrm(contactId, contactData, user, messeName) {
       notes: contactData.notes || "",
       source: messeName ? `Fuarbot: ${messeName}` : "Fuarbot",
       status: "new",
+      customerAvatar: contactData.customerAvatar || null,
       updatedAt: new Date().toISOString()
     };
     await setDoc(doc(db, "crm_customers", contactId), crmData, { merge: true });

@@ -1343,7 +1343,11 @@ export default function App() {
                 if (wPhone) {
                   const cl = detectContactLang(scanData.email, scanData.name);
                   const message = getWhatsAppMessage(cl, scanData.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp.catalogUrl || "https://windoform.de");
-                  setTimeout(() => { openWhatsApp(wPhone, message); notify(t("whatsappCopied")); }, 500);
+                  setTimeout(() => { 
+                    openWhatsApp(wPhone, message); 
+                    if (composeModal.savedId) addTimelineEvent(composeModal.savedId, { type: "whatsapp", label: "WhatsApp geöffnet (Auto)", icon: "whatsapp", phone: wPhone, message });
+                    notify(t("whatsappCopied")); 
+                  }, 500);
                 }
               }
             }} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", color: T.txM, cursor: "pointer" }}><Ic name="x" size={24} /></button>
@@ -1400,7 +1404,7 @@ export default function App() {
               
               if (type === "whatsapp") {
                 openWhatsApp(waPhone, customMsg);
-                if (savedId) addTimelineEvent(savedId, { type: "whatsapp", label: "WhatsApp gesendet", icon: "whatsapp", phone: waPhone });
+                if (savedId) addTimelineEvent(savedId, { type: "whatsapp", label: "WhatsApp gesendet", icon: "whatsapp", phone: waPhone, message: customMsg });
                 notify(t("whatsappCopied"));
               } else {
                 const emailResult = await sendEmail(contact.email, contact.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp, customMsg);
@@ -1417,7 +1421,11 @@ export default function App() {
                   if (wPhone) {
                     const cl = detectContactLang(scanData.email, scanData.name);
                     const msg = getWhatsAppMessage(cl, scanData.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp.catalogUrl || "https://windoform.de");
-                    setTimeout(() => { openWhatsApp(wPhone, msg); notify(t("whatsappCopied")); }, 1500);
+                    setTimeout(() => { 
+                      openWhatsApp(wPhone, msg); 
+                      if (savedId) addTimelineEvent(savedId, { type: "whatsapp", label: "WhatsApp geöffnet (Auto)", icon: "whatsapp", phone: wPhone, message: msg });
+                      notify(t("whatsappCopied")); 
+                    }, 1500);
                   }
                 }
               }
