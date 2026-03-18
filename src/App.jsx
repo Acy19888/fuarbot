@@ -53,7 +53,7 @@ async function scanCard(base64, mediaType) {
   } catch { return null; }
 }
 
-async function sendEmail(to, contactName, messeName, salesPerson, smtp) {
+async function sendEmail(to, contactName, messeName, salesPerson, smtp, customMessage) {
   if (!smtp?.smtpHost || !smtp?.smtpUser || !smtp?.smtpPass) return null;
   try {
     const res = await fetch("/api/email", {
@@ -66,6 +66,7 @@ async function sendEmail(to, contactName, messeName, salesPerson, smtp) {
         companyName: smtp.companyName, catalogUrl: smtp.catalogUrl,
         userPhone: smtp.userPhone || "",
         avatar: smtp.avatar || "",
+        customMessage: customMessage || ""
       }),
     });
     const data = await res.json();
@@ -450,44 +451,20 @@ export default function App() {
     }
 
     if (withContact) {
-      // 1. Always send email if address exists
       if (enriched.email) {
-        const emailResult = await sendEmail(enriched.email, enriched.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp);
-        if (emailResult && emailResult.success) {
-          contactData.emailSent = true;
-          setEmailSent(true);
-          setTimeout(() => setEmailSent(false), 2500);
-          // Record email event
-          if (savedId) addTimelineEvent(savedId, { type: "email", label: "Email gesendet", icon: "mail", to: enriched.email, htmlBody: emailResult.htmlBody });
+        setComposeModal({ contact: enriched, isNewScan: true, scanData: enriched, savedId });
+        setCustomMsg("");
+      } else {
+        const waPhone = getBestWhatsAppNumber(enriched);
+        if (waPhone) {
+          const contactLang = detectContactLang(enriched.email, enriched.name);
+          const catalog = smtp.catalogUrl || "https://windoform.de";
+          const message = getWhatsAppMessage(contactLang, enriched.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, catalog);
+          if (savedId) addTimelineEvent(savedId, { type: "whatsapp", label: "WhatsApp geöffnet", icon: "whatsapp", phone: waPhone });
+          setTimeout(() => { openWhatsApp(waPhone, message); notify(t("whatsappCopied")); }, 800);
         } else {
-          notify(emailResult?.error || (smtpSaved ? t("emailFailed") : t("setupEmailFirst")), "error");
+          notify(t("noEmailAddress"), "warn");
         }
-      }
-
-      // 2. Also open WhatsApp if mobile number exists
-      const waPhone = getBestWhatsAppNumber(enriched);
-      if (waPhone) {
-        const contactLang = detectContactLang(enriched.email, enriched.name);
-        const catalog = smtp.catalogUrl || "https://windoform.de";
-        const message = getWhatsAppMessage(contactLang, enriched.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, catalog);
-        contactData.whatsappSent = true;
-        // Record WhatsApp event
-        if (savedId) addTimelineEvent(savedId, { type: "whatsapp", label: "WhatsApp geöffnet", icon: "whatsapp", phone: waPhone });
-
-        // Small delay so user sees email notification first
-        setTimeout(() => {
-          openWhatsApp(waPhone, message);
-          notify(t("whatsappCopied"));
-        }, contactData.emailSent ? 1500 : 100);
-      }
-
-      // Notify based on what happened
-      if (contactData.emailSent && waPhone) {
-        notify(`Email + WhatsApp → ${enriched.name}`);
-      } else if (contactData.emailSent) {
-        // Email notification already shown
-      } else if (!enriched.email) {
-        notify(t("noEmailAddress"), "warn");
       }
     } else if (!editingContact) {
       notify(t("contactSaved"));
@@ -966,10 +943,9 @@ export default function App() {
 
             {/* Quick Actions */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
-              {c.email && <button onClick={async () => {
-                const emailResult = await sendEmail(c.email, c.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp);
-                if (emailResult && emailResult.success) { addTimelineEvent(c.id, { type: "email", label: "Email gesendet", icon: "mail", to: c.email, htmlBody: emailResult.htmlBody }); notify("Email gesendet!"); }
-                else notify(emailResult?.error || t("emailFailed"), "error");
+              {c.email && <button onClick={() => {
+                setComposeModal({ contact: c, savedId: c.id });
+                setCustomMsg("");
               }} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid ${T.bd}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: T.sf }}>
                 <Ic name="mail" size={20} color={T.ok} />
                 <span style={{ fontSize: 11, color: T.txM, fontWeight: 600 }}>Email</span>
@@ -1258,6 +1234,89 @@ export default function App() {
           ))}
         </div>
       )}
+
+      {/* ============ AI COMPOSE EMAIL MODAL ============ */}
+      {composeModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(10,22,40,0.85)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ ...S.card, width: "100%", maxWidth: 500, padding: 24, boxShadow: "0 24px 48px rgba(0,0,0,0.4)", position: "relative" }}>
+            <button onClick={() => {
+              const { isNewScan, scanData } = composeModal;
+              setComposeModal(null);
+              if (isNewScan && scanData) {
+                const waPhone = getBestWhatsAppNumber(scanData);
+                if (waPhone) {
+                  const cl = detectContactLang(scanData.email, scanData.name);
+                  const message = getWhatsAppMessage(cl, scanData.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp.catalogUrl || "https://windoform.de");
+                  setTimeout(() => { openWhatsApp(waPhone, message); notify(t("whatsappCopied")); }, 500);
+                }
+              }
+            }} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", color: T.txM, cursor: "pointer" }}><Ic name="x" size={24} /></button>
+            
+            <h3 style={{ fontSize: 18, color: T.tx, marginBottom: 8, marginTop: 0 }}>E-Mail an {composeModal.contact.name}</h3>
+            <p style={{ fontSize: 13, color: T.txM, marginBottom: 20 }}>Katalog, Begrüßung und Signatur werden automatisch generiert.</p>
+            
+            <label style={S.label}>Persönliche Nachricht (optional)</label>
+            <textarea
+              value={customMsg}
+              onChange={(e) => setCustomMsg(e.target.value)}
+              placeholder="z.B. Danke für das nette Gespräch heute! (Wird direkt als Text übernommen)"
+              rows={4}
+              style={{ ...S.input, resize: "vertical", marginBottom: 16 }}
+            />
+            
+            <button 
+              disabled={!customMsg || isGeneratingAI}
+              onClick={async () => {
+                setIsGeneratingAI(true);
+                try {
+                  const tl = detectContactLang(composeModal.contact.email, composeModal.contact.name);
+                  const res = await fetch("/api/ai", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ prompt: customMsg, contactName: composeModal.contact.name, language: tl })
+                  });
+                  const data = await res.json();
+                  if (res.ok && data.result) {
+                    setCustomMsg(data.result);
+                    notify("Text erfolgreich durch KI optimiert!", "success");
+                  } else {
+                    notify("KI Fehler: " + (data.error || "Unbekannt"), "error");
+                  }
+                } catch(e) { notify("Verbindungsfehler zur KI", "error"); }
+                setIsGeneratingAI(false);
+              }}
+              style={{ width: "100%", padding: "12px", background: "linear-gradient(90deg, #10B981, #059669)", border: "none", borderRadius: 12, color: T.wh, fontSize: 13, fontWeight: 700, cursor: (!customMsg || isGeneratingAI) ? "not-allowed" : "pointer", marginBottom: 24, opacity: (!customMsg || isGeneratingAI) ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "opacity 0.2s" }}
+            >
+              <Ic name="edit" size={16} /> {/* Using edit as a replacement for sparkles since sparkless may not exist in Ic */}
+              {isGeneratingAI ? "KI übersetzt..." : "KI: Professionell umschreiben & übersetzen"}
+            </button>
+
+            <button onClick={async () => {
+              const { contact, isNewScan, scanData, savedId } = composeModal;
+              setComposeModal(null);
+              const emailResult = await sendEmail(contact.email, contact.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp, customMsg);
+              if (emailResult && emailResult.success) {
+                notify("Email gesendet!", "success");
+                const sid = savedId || contact.id;
+                if (sid) addTimelineEvent(sid, { type: "email", label: "Email gesendet", icon: "mail", to: contact.email, htmlBody: emailResult.htmlBody });
+              } else {
+                notify(emailResult?.error || "Fehler beim E-Mail Versand", "error");
+              }
+
+              if (isNewScan && scanData) {
+                const waPhone = getBestWhatsAppNumber(scanData);
+                if (waPhone) {
+                  const cl = detectContactLang(scanData.email, scanData.name);
+                  const message = getWhatsAppMessage(cl, scanData.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp.catalogUrl || "https://windoform.de");
+                  setTimeout(() => { openWhatsApp(waPhone, message); notify(t("whatsappCopied")); }, 1500);
+                }
+              }
+            }} style={S.btn(T.acc, T.wh)}>
+              <Ic name="send" size={18} color={T.wh} /> Jetzt senden
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
