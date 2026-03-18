@@ -1310,21 +1310,7 @@ export default function App() {
               <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>{t("phoneHint")}</p>
             </div>
 
-            <div style={{ marginBottom: 20 }}>
-              <label style={S.label}>
-                {lang === "tr" ? "Standart E-posta Mesajı (" + (lang === "de" ? "Deutsch" : lang === "tr" ? "Türkçe" : "English") + ")" : lang === "en" ? "Default Email Message (" + (lang === "en" ? "English" : "") + ")" : "Standard E-Mail Nachricht (Deutsch)"}
-              </label>
-              <textarea
-                value={defaultMsgs[lang] || ""}
-                onChange={(e) => setDefaultMsgs((d) => ({ ...d, [lang]: e.target.value }))}
-                placeholder={lang === "tr" ? "Standart kişisel mesajınızı buraya yazın..." : lang === "en" ? "Your default personal message..." : "Standard-Nachricht für neue Kontakte..."}
-                rows={4}
-                style={{ ...S.input, resize: "vertical", marginBottom: 4 }}
-              />
-              <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>
-                {lang === "tr" ? "Bu metin, e-posta hazırlarken otomatik olarak doldurulur. YZ butonu onu iyileştirir." : lang === "en" ? "This text pre-fills the compose window. The AI button will improve it." : "Dieser Text wird beim E-Mail schreiben automatisch eingefügt. Der KI-Button verbessert ihn dann."}
-              </p>
-            </div>
+
 
             <div style={{ marginBottom: 20 }}>
               <label style={S.label}>
