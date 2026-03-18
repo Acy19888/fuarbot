@@ -264,6 +264,12 @@ export default function App() {
   const [showDupeWarning, setShowDupeWarning] = useState(null);
   const [selectedContact, setSelectedContact] = useState(null); // for detail view
   const [viewingEmail, setViewingEmail] = useState(null); // stores html string to preview
+  const [emailViewerModal, setEmailViewerModal] = useState(null); // {htmlBody, to, date}
+
+  // --- AI Compose Email State ---
+  const [composeModal, setComposeModal] = useState(null); // { contact, isNewScan?: boolean, scanData?: any, savedId?: string }
+  const [customMsg, setCustomMsg] = useState("");
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
