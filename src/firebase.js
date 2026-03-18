@@ -209,8 +209,22 @@ export function subscribeToContactQuotes(userId, contactId, callback) {
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
   }, (err) => {
-    console.error("Quote subscription error:", err);
-    callback([]);
+    console.error("Quote subscription error (missing index?):", err);
+    // Fallback if composite index not ready yet
+    const fq = query(collection(db, "quotes"), orderBy("createdAt", "desc"));
+    onSnapshot(fq, (snap) => {
+      callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+        .filter((q) => q.userId === userId && q.contactId === contactId));
+    }, (err2) => {
+      // Ultimate fallback if even orderBy desc isn't allowed (should be allowed by default though)
+      const uq = query(collection(db, "quotes"));
+      onSnapshot(uq, (snap) => {
+        const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+          .filter((q) => q.userId === userId && q.contactId === contactId);
+        docs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        callback(docs);
+      });
+    });
   });
 }
 
