@@ -339,11 +339,11 @@ export default function App() {
 
   // Subscribe to quotes for the currently viewed contact
   useEffect(() => {
-    const viewedId = current?.id;
+    const viewedId = selectedContact?.id;
     if (!user || !viewedId) { setContactQuotes([]); return; }
     const unsub = subscribeToContactQuotes(user.uid, viewedId, setContactQuotes);
     return unsub;
-  }, [user, current?.id]);
+  }, [user, selectedContact?.id]);
 
   useEffect(() => () => stopCamera(), []);
 
@@ -1088,7 +1088,7 @@ export default function App() {
             </div>
 
             {/* Quick Actions */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(70px, 1fr))", gap: 10, marginBottom: 14 }}>
               {c.email && <button onClick={() => {
                 setComposeModal({ type: "email", contact: c, savedId: c.id });
                 setCustomMsg("");
