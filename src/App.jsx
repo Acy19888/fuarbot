@@ -1966,7 +1966,7 @@ export default function App() {
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: 20, fontWeight: 800, color: T.acc }}>
-                      {editableLines.reduce((s, l) => s + (parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0), 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {(() => { const cur = quotePreview.currency; const sym = cur === "USD" ? "$" : cur === "TRY" ? "₺" : "€"; const numLocale = cur === "USD" ? "en-US" : cur === "TRY" ? "tr-TR" : "de-DE"; return editableLines.reduce((s, l) => s + (parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0), 0).toLocaleString(numLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + sym; })()}
                     </div>
                     <div style={{ fontSize: 11, color: T.txD }}>{quotePreview.currency} ({t("nettoLabel")})</div>
                   </div>
@@ -2014,7 +2014,7 @@ export default function App() {
                         </div>
                         <div style={{ flex: 1, textAlign: "right", paddingTop: 18 }}>
                           <span style={{ fontSize: 13, fontWeight: 700, color: T.acc }}>
-                            {((parseFloat(line.qty) || 0) * (parseFloat(line.unitPrice) || 0)).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {quotePreview.currency}
+                            {(() => { const cur = quotePreview.currency; const sym = cur === "USD" ? "$" : cur === "TRY" ? "₺" : "€"; const numLocale = cur === "USD" ? "en-US" : cur === "TRY" ? "tr-TR" : "de-DE"; return ((parseFloat(line.qty) || 0) * (parseFloat(line.unitPrice) || 0)).toLocaleString(numLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + sym; })()}
                           </span>
                         </div>
                       </div>

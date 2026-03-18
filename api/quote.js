@@ -82,9 +82,9 @@ function buildHtmlQuote({ quoteNumber, date, company, salesPerson, userPhone, co
     en: { title: "Quotation", pos: "Pos.", product: "Product / Description", qty: "Qty", unit: "Unit", unitStr: "pcs", unitPrice: "Unit Price", total: "Total", net: "Total Amount (Net)", vatLabel: "VAT", gross: "Gross Amount", validity: "Validity", validityVal: "30 days", delivery: "Delivery Terms", deliveryVal: "EXW (Ex Works)", payment: "Payment Terms", paymentVal: "30 days net", greeting: "Dear Sir or Madam,", closing: "Best regards", to: "Offered to", from: "From" }
   };
   const l = L[lang] || L.en;
-  const sym = currency === "USD" ? "$" : currency === "GBP" ? "£" : "€";
-  const locale = lang === "de" ? "de-DE" : lang === "tr" ? "tr-TR" : "en-US";
-  const fmt = (n) => Number(n).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + sym;
+  const sym = currency === "USD" ? "$" : currency === "GBP" ? "£" : currency === "TRY" ? "₺" : "€";
+  const numLocale = currency === "USD" ? "en-US" : currency === "TRY" ? "tr-TR" : lang === "de" ? "de-DE" : lang === "tr" ? "tr-TR" : "en-US";
+  const fmt = (n) => Number(n).toLocaleString(numLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + sym;
 
   const rows = lines.map((line, i) => `
     <tr style="border-bottom:1px solid #f0f0f0;">
@@ -286,9 +286,16 @@ export default async function handler(req, res) {
       ? `\nMatched Windoform product(s) for this request:\n${matchedProducts}\nUse the correct product name from above in the quote.`
       : `\nNo specific product matched. Use the product name as written by the user.`;
 
+    // Detect currency from user's request before sending to AI
+    const reqLower = userRequest.toLowerCase();
+    let detectedCurrency = "EUR"; // default
+    if (/dollar|\busd\b|\$/.test(reqLower)) detectedCurrency = "USD";
+    else if (/\btry\b|türk lira|turk lira|turkish lira|lira|₺/.test(reqLower)) detectedCurrency = "TRY";
+    else if (/euro|€|\beur\b/.test(reqLower)) detectedCurrency = "EUR";
+
     const prompt = `You are a professional B2B sales assistant for ${company}.
 
-COMPANY: WINDOFORM® - Turkish manufacturer of door and window handles for aluminum/PVC profiles. EXW pricing, no VAT for export. Currency: EUR. Payment: 30 days net.
+COMPANY: WINDOFORM® - Turkish manufacturer of door and window handles for aluminum/PVC profiles. EXW pricing, no VAT for export. Payment: 30 days net.
 RAL 9016 = Verkehrsweiss (white). All prices are NET EXW.
 ${productCtx}
 
@@ -306,12 +313,13 @@ Instructions:
 - If only total given (e.g. "5000"), set unitPrice = total / qty (default qty=1 if not given)
 - Generate a professional product description including RAL color if present
 - All prices are NET (no VAT) - EXW export pricing
+- CURRENCY: The user specified "${detectedCurrency}" — use this currency code exactly in the response
 - lang: "${lang || "de"}"
 
 Return JSON:
 {
   "lines": [{ "product": "string", "description": "string including RAL color name", "qty": number, "unit": "Stk.", "unitPrice": number }],
-  "currency": "EUR",
+  "currency": "${detectedCurrency}",
   "notes": "any additional info or special conditions",
   "subject": "quote email subject line",
   "ralCode": "extracted RAL code or null",
