@@ -858,7 +858,7 @@ export default function App() {
             }} />
             <label htmlFor="customerPicInput" style={{ ...S.card, width: 88, height: 88, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", padding: 0, border: `2px dashed ${T.acc}`, marginBottom: 8 }}>
               {capturedCustomerPic || current.customerAvatar ? (
-                <img src={capturedCustomerPic || current.customerAvatar} alt="Kunde" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <img src={capturedCustomerPic || current.customerAvatar} alt="Kunde" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 15%" }} />
               ) : (
                 <Ic name="camera" size={32} color={T.acc} />
               )}
@@ -935,7 +935,7 @@ export default function App() {
             >
               <div style={{ display: "flex", gap: 12 }}>
                 {c.customerAvatar ? (
-                  <img src={c.customerAvatar} style={{ width: 46, height: 46, borderRadius: 12, objectFit: "cover", flexShrink: 0 }} alt="" />
+                  <img src={c.customerAvatar} style={{ width: 46, height: 46, borderRadius: 12, objectFit: "cover", objectPosition: "center 15%", flexShrink: 0 }} alt="" />
                 ) : (
                   <div style={{ width: 46, height: 46, borderRadius: 12, flexShrink: 0, background: `linear-gradient(135deg,${T.sf2},${T.bd})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: T.acc }}>{c.name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}</div>
                 )}
@@ -979,7 +979,7 @@ export default function App() {
             {/* Avatar + Info */}
             <div style={{ ...S.card, padding: 24, marginBottom: 14, textAlign: "center" }}>
               {c.customerAvatar ? (
-                <img src={c.customerAvatar} style={{ width: 88, height: 88, borderRadius: "50%", objectFit: "cover", margin: "0 auto 16px", display: "block", boxShadow: `0 8px 24px rgba(43,85,151,.35)`, border: `2px solid ${T.bd}` }} alt="" />
+                <img src={c.customerAvatar} style={{ width: 88, height: 88, borderRadius: "50%", objectFit: "cover", objectPosition: "center 15%", margin: "0 auto 16px", display: "block", boxShadow: `0 8px 24px rgba(43,85,151,.35)`, border: `2px solid ${T.bd}` }} alt="" />
               ) : (
                 <div style={{ width: 72, height: 72, borderRadius: 20, background: `linear-gradient(135deg,${T.acc},#1E4080)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, color: T.wh, margin: "0 auto 16px", boxShadow: `0 8px 24px rgba(43,85,151,.35)` }}>
                   {c.name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
