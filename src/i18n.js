@@ -53,6 +53,10 @@ const translations = {
     // Review
     checkContact: "Kontakt prüfen",
     editContact: "Kontakt bearbeiten",
+    addCustomerPhoto: "Kundenfoto hinzufügen",
+    changePhoto: "Foto ändern",
+    takePhoto: "Foto machen",
+    chooseGallery: "Aus Galerie",
     aiRecognized: "AI-erkannt",
     editing: "Bearbeiten",
     firma: "Firma",
@@ -188,6 +192,10 @@ const translations = {
     
     checkContact: "Kişiyi kontrol et",
     editContact: "Kişiyi düzenle",
+    addCustomerPhoto: "Müşteri fotoğrafı ekle",
+    changePhoto: "Fotoğrafı değiştir",
+    takePhoto: "Fotoğraf çek",
+    chooseGallery: "Galeriden seç",
     aiRecognized: "AI tarafından tanındı",
     editing: "Düzenleme",
     firma: "Şirket",
@@ -315,6 +323,10 @@ const translations = {
     
     checkContact: "Review Contact",
     editContact: "Edit Contact",
+    addCustomerPhoto: "Add customer photo",
+    changePhoto: "Change photo",
+    takePhoto: "Take photo",
+    chooseGallery: "From gallery",
     aiRecognized: "AI-recognized",
     editing: "Editing",
     firma: "Company",

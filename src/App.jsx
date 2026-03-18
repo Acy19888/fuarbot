@@ -861,20 +861,23 @@ export default function App() {
               }
             }} />
 
-            <div style={{ ...S.card, width: 88, height: 88, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 0, border: `2px dashed ${T.acc}`, marginBottom: 16 }}>
+            <div style={{ ...S.card, width: 88, height: 88, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 0, border: `2px dashed ${T.acc}`, marginBottom: 12 }}>
               {capturedCustomerPic || current.customerAvatar ? (
                 <img src={capturedCustomerPic || current.customerAvatar} alt="Kunde" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 15%" }} />
               ) : (
-                <Ic name="user" size={36} color={T.txD} />
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <Ic name="user" size={32} color={T.txD} />
+                  <span style={{ fontSize: 10, color: T.txM, fontWeight: 600, textAlign: "center", padding: "0 4px", lineHeight: 1.1 }}>{capturedCustomerPic || current.customerAvatar ? t("changePhoto") : t("addCustomerPhoto")}</span>
+                </div>
               )}
             </div>
             
             <div style={{ display: "flex", gap: 12 }}>
               <label htmlFor="customerPicCamera" style={{ ...S.btn(T.sf, T.tx), padding: "10px 16px", borderRadius: 20, fontSize: 13, border: `1px solid ${T.bd}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-                <Ic name="camera" size={16} color={T.tx} /> Kunde knipsen
+                <Ic name="camera" size={16} color={T.tx} /> {t("takePhoto")}
               </label>
               <label htmlFor="customerPicGallery" style={{ ...S.btn(T.sf, T.tx), padding: "10px 16px", borderRadius: 20, fontSize: 13, border: `1px solid ${T.bd}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-                <Ic name="image" size={16} color={T.tx} /> Aus Galerie
+                <Ic name="image" size={16} color={T.tx} /> {t("chooseGallery")}
               </label>
             </div>
           </div>
