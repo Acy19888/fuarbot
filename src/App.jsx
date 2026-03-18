@@ -4,7 +4,7 @@ import {
   updateContactInFirebase, deleteContactFromFirebase,
   loginUser, registerUser, logoutUser, onAuthChange,
   saveUserSettings, getUserSettings, addTimelineEvent, syncToCrm,
-  uploadCustomerAvatarBase64
+  uploadCustomerAvatarBase64, saveQuote, getContactQuotes, subscribeToContactQuotes
 } from "./firebase.js";
 import { detectSystemLanguage, useTranslation } from "./i18n.js";
 
@@ -290,9 +290,17 @@ export default function App() {
   const [emailViewerModal, setEmailViewerModal] = useState(null); // {htmlBody, to, date}
 
   // --- AI Compose Email State ---
-  const [composeModal, setComposeModal] = useState(null); // { contact, isNewScan?: boolean, scanData?: any, savedId?: string }
+  const [composeModal, setComposeModal] = useState(null);
   const [customMsg, setCustomMsg] = useState("");
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+
+  // --- Angebot (Quote) State ---
+  const [angebotModal, setAngebotModal] = useState(null);
+  const [angebotRequest, setAngebotRequest] = useState("");
+  const [isGeneratingQuote, setIsGeneratingQuote] = useState(false);
+  const [quotePreview, setQuotePreview] = useState(null);
+  const [contactQuotes, setContactQuotes] = useState([]);
+  const [quoteViewerModal, setQuoteViewerModal] = useState(null);
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -324,11 +332,18 @@ export default function App() {
   useEffect(() => {
     if (!user || !selectedMesse) return;
     const unsub = subscribeToContacts(user.uid, (data) => {
-      // Filter by selected messe
       setContacts(data.filter((c) => c.messeId === selectedMesse.id));
     });
     return unsub;
   }, [user, selectedMesse]);
+
+  // Subscribe to quotes for the currently viewed contact
+  useEffect(() => {
+    const viewedId = current?.id;
+    if (!user || !viewedId) { setContactQuotes([]); return; }
+    const unsub = subscribeToContactQuotes(user.uid, viewedId, setContactQuotes);
+    return unsub;
+  }, [user, current?.id]);
 
   useEffect(() => () => stopCamera(), []);
 
@@ -1053,7 +1068,17 @@ export default function App() {
               )}
               <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>{c.name}</h3>
               {c.position && <p style={{ fontSize: 13, color: T.accS, fontWeight: 600, marginBottom: 2 }}>{c.position}</p>}
-              {c.company && <p style={{ fontSize: 14, color: T.txM, marginBottom: 12 }}>{c.company}</p>}
+              {c.company && <p style={{ fontSize: 14, color: T.txM, marginBottom: 4 }}>{c.company}</p>}
+              {contactQuotes.length > 0 && (
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(43,85,151,0.12)", border: `1px solid rgba(43,85,151,0.25)`, borderRadius: 20, padding: "3px 12px", marginBottom: 10, cursor: "pointer" }}
+                  onClick={() => setQuoteViewerModal(contactQuotes[0])}>
+                  <Ic name="file-text" size={12} color={T.acc} />
+                  <span style={{ fontSize: 11, color: T.acc, fontWeight: 700 }}>
+                    {lang === "tr" ? "Son Teklif" : lang === "en" ? "Last Quote" : "Letztes Angebot"}: 
+                    {Number(contactQuotes[0].totalGross).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {contactQuotes[0].currency || "€"}
+                  </span>
+                </div>
+              )}
               <div style={{ display: "flex", flexDirection: "column", gap: 6, textAlign: "left" }}>
                 {c.email && <div style={{ display: "flex", gap: 10, alignItems: "center" }}><Ic name="mail" size={14} color={T.txD} /><span style={{ fontSize: 13, color: T.txM }}>{c.email}</span></div>}
                 {(c.phone || c.mobile) && <div style={{ display: "flex", gap: 10, alignItems: "center" }}><Ic name="phone" size={14} color={T.txD} /><span style={{ fontSize: 13, color: T.txM }}>{c.mobile || c.phone}</span></div>}
@@ -1063,7 +1088,7 @@ export default function App() {
             </div>
 
             {/* Quick Actions */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
               {c.email && <button onClick={() => {
                 setComposeModal({ type: "email", contact: c, savedId: c.id });
                 setCustomMsg("");
@@ -1080,9 +1105,19 @@ export default function App() {
                 <Ic name="whatsapp" size={20} color="#25D366" />
                 <span style={{ fontSize: 11, color: T.txM, fontWeight: 600 }}>WhatsApp</span>
               </button>}
+              <button onClick={() => {
+                setAngebotRequest("");
+                setQuotePreview(null);
+                setAngebotModal({ contact: c, savedId: c.id });
+              }} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid rgba(43,85,151,0.3)`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "rgba(43,85,151,0.06)" }}>
+                <Ic name="file-text" size={20} color={T.acc} />
+                <span style={{ fontSize: 11, color: T.acc, fontWeight: 700 }}>
+                  {lang === "tr" ? "Teklif" : lang === "en" ? "Quote" : "Angebot"}
+                </span>
+              </button>
               <button onClick={() => startEditing(c)} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid ${T.bd}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: T.sf }}>
                 <Ic name="edit" size={20} color={T.accS} />
-                <span style={{ fontSize: 11, color: T.txM, fontWeight: 600 }}>Bearbeiten</span>
+                <span style={{ fontSize: 11, color: T.txM, fontWeight: 600 }}>{lang === "tr" ? "Düzenle" : lang === "en" ? "Edit" : "Bearbeiten"}</span>
               </button>
             </div>
 
@@ -1480,6 +1515,226 @@ export default function App() {
             }} style={S.btn(T.acc, T.wh)}>
               <Ic name="send" size={18} color={T.wh} /> {t("sendNow")}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ===== ANGEBOT MODAL ===== */}
+      {angebotModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div style={{ background: T.bg, borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, maxHeight: "92vh", overflowY: "auto", padding: "24px 20px 32px" }}>
+
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: T.tx }}>
+                  {lang === "tr" ? "Teklif Oluştur" : lang === "en" ? "Create Quote" : "Angebot erstellen"}
+                </div>
+                <div style={{ fontSize: 12, color: T.txD, marginTop: 2 }}>{angebotModal.contact.name}</div>
+              </div>
+              <button onClick={() => { setAngebotModal(null); setQuotePreview(null); }} style={{ background: T.sf, border: "none", borderRadius: 12, padding: "8px 14px", cursor: "pointer", color: T.txM }}>✕</button>
+            </div>
+
+            {/* Previous quotes for context */}
+            {contactQuotes.length > 0 && (
+              <div style={{ background: "rgba(43,85,151,0.08)", borderRadius: 10, padding: "10px 14px", marginBottom: 14 }}>
+                <div style={{ fontSize: 11, color: T.acc, fontWeight: 700, marginBottom: 6 }}>
+                  {lang === "tr" ? "Önceki Teklifler" : lang === "en" ? "Previous Quotes" : "Frühere Angebote"}
+                </div>
+                {contactQuotes.slice(0, 3).map(q => (
+                  <div key={q.id} style={{ fontSize: 12, color: T.txM, padding: "3px 0", borderBottom: `1px solid rgba(43,85,151,0.1)` }}>
+                    📄 {q.quoteNumber} – {q.product} – 
+                    <strong>{Number(q.totalGross).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {q.currency}</strong>
+                    <span style={{ color: T.txD }}> ({q.createdAt?.slice(0, 10)})</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Request input */}
+            {!quotePreview && (
+              <>
+                <label style={S.label}>
+                  {lang === "tr" ? "Teklif İsteğiniz" : lang === "en" ? "Describe the Quote" : "Angebot beschreiben"}
+                </label>
+                <textarea
+                  value={angebotRequest}
+                  onChange={e => setAngebotRequest(e.target.value)}
+                  placeholder={lang === "tr" ? "Örn: 5000 Ege Akustik RAL 9016" : lang === "en" ? "E.g. 5000 Ege Akustik RAL 9016" : "Bsp: 5000 Ege Akustik RAL 9016"}
+                  rows={4}
+                  style={{ ...S.input, resize: "vertical", marginBottom: 14 }}
+                />
+                <button
+                  disabled={!angebotRequest.trim() || isGeneratingQuote}
+                  onClick={async () => {
+                    setIsGeneratingQuote(true);
+                    try {
+                      const prevQ = contactQuotes.slice(0, 5).map(q => ({
+                        quoteNumber: q.quoteNumber, product: q.product,
+                        totalPrice: q.totalGross, currency: q.currency, createdAt: q.createdAt
+                      }));
+                      const cLang = detectContactLang(angebotModal.contact.email, angebotModal.contact.name, angebotModal.contact.address);
+                      const res = await fetch("/api/quote", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          userRequest: angebotRequest,
+                          contact: angebotModal.contact,
+                          previousQuotes: prevQ,
+                          salesPerson: user?.displayName || user?.email,
+                          messeName: selectedMesse ? selectedMesse.name + " " + (selectedMesse.city || "") : "",
+                          companyName: smtp.companyName || "Windoform",
+                          catalogUrl: smtp.catalogUrl || "https://windoform.de",
+                          userPhone: smtp.userPhone || "",
+                          lang: cLang,
+                          sendEmail: false
+                        })
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        setQuotePreview(data);
+                      } else {
+                        notify("KI-Fehler: " + (data.error || "Unbekannt"), "error");
+                      }
+                    } catch (e) {
+                      notify("Fehler: " + e.message, "error");
+                    } finally {
+                      setIsGeneratingQuote(false);
+                    }
+                  }}
+                  style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), marginBottom: 8, opacity: isGeneratingQuote || !angebotRequest.trim() ? 0.6 : 1 }}
+                >
+                  <Ic name="cpu" size={16} color={T.wh} />
+                  {isGeneratingQuote
+                    ? (lang === "tr" ? " Oluşturuluyor..." : lang === "en" ? " Generating..." : " Erstelle Angebot...")
+                    : (lang === "tr" ? " KI Teklif Oluştur" : lang === "en" ? " AI Generate Quote" : " KI erstellt Angebot")}
+                </button>
+              </>
+            )}
+
+            {/* Preview + actions */}
+            {quotePreview && (
+              <>
+                <div style={{ borderRadius: 10, overflow: "hidden", border: `1px solid ${T.bd}`, marginBottom: 14, maxHeight: 320, overflowY: "auto" }}>
+                  <div dangerouslySetInnerHTML={{ __html: quotePreview.htmlQuote }} />
+                </div>
+                <div style={{ background: T.sf, borderRadius: 10, padding: "12px 16px", marginBottom: 14, display: "flex", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ fontSize: 12, color: T.txD }}>{quotePreview.quoteNumber}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: T.tx }}>{quotePreview.product}</div>
+                    {quotePreview.ralCode && <div style={{ fontSize: 12, color: T.txM }}>RAL {quotePreview.ralCode} · {quotePreview.ralColorName}</div>}
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: T.acc }}>
+                      {Number(quotePreview.totalGross).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div style={{ fontSize: 12, color: T.txD }}>{quotePreview.currency} inkl. MwSt.</div>
+                  </div>
+                </div>
+
+                <button onClick={() => { setQuotePreview(null); }} style={{ ...S.btn(T.sf, T.txM), marginBottom: 8, border: `1px solid ${T.bd}` }}>
+                  ← {lang === "tr" ? "Değiştir" : lang === "en" ? "Edit Request" : "Ändern"}
+                </button>
+
+                {/* Save only */}
+                <button onClick={async () => {
+                  const qData = {
+                    userId: user.uid, contactId: angebotModal.contact.id || angebotModal.savedId,
+                    contactName: angebotModal.contact.name, contactEmail: angebotModal.contact.email,
+                    ...quotePreview, status: "draft"
+                  };
+                  const qid = await saveQuote(qData);
+                  if (qid) {
+                    addTimelineEvent(angebotModal.savedId || angebotModal.contact.id, {
+                      type: "quote", icon: "file-text",
+                      label: `Angebot gespeichert: ${quotePreview.quoteNumber} | ${quotePreview.product} | ${Number(quotePreview.totalGross).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${quotePreview.currency}`,
+                      quoteId: qid, quoteNumber: quotePreview.quoteNumber
+                    });
+                    notify(lang === "tr" ? "Teklif kaydedildi" : lang === "en" ? "Quote saved" : "Angebot gespeichert");
+                    setAngebotModal(null); setQuotePreview(null);
+                  } else notify("Speichern fehlgeschlagen", "error");
+                }} style={{ ...S.btn(T.sf, T.txM), marginBottom: 8, border: `1px solid ${T.bd}` }}>
+                  <Ic name="save" size={16} color={T.txM} />
+                  {lang === "tr" ? " Kaydet (göndermeden)" : lang === "en" ? " Save (no email)" : " Nur speichern"}
+                </button>
+
+                {/* Save + Send */}
+                {angebotModal.contact.email && smtp.smtpHost && (
+                  <button onClick={async () => {
+                    setIsGeneratingQuote(true);
+                    try {
+                      const cLang = detectContactLang(angebotModal.contact.email, angebotModal.contact.name, angebotModal.contact.address);
+                      const res = await fetch("/api/quote", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          userRequest: angebotRequest,
+                          contact: angebotModal.contact,
+                          previousQuotes: [],
+                          salesPerson: user?.displayName || user?.email,
+                          messeName: selectedMesse ? selectedMesse.name + " " + (selectedMesse.city || "") : "",
+                          companyName: smtp.companyName || "Windoform",
+                          catalogUrl: smtp.catalogUrl || "https://windoform.de",
+                          userPhone: smtp.userPhone || "",
+                          lang: cLang,
+                          sendEmail: true,
+                          smtpHost: smtp.smtpHost, smtpPort: smtp.smtpPort,
+                          smtpUser: smtp.smtpUser, smtpPass: smtp.smtpPass,
+                          smtpFrom: smtp.smtpFrom || smtp.smtpUser
+                        })
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        const qData = {
+                          userId: user.uid, contactId: angebotModal.contact.id || angebotModal.savedId,
+                          contactName: angebotModal.contact.name, contactEmail: angebotModal.contact.email,
+                          ...data, status: data.emailSent ? "sent" : "draft", sentAt: data.emailSent ? new Date().toISOString() : null
+                        };
+                        const qid = await saveQuote(qData);
+                        addTimelineEvent(angebotModal.savedId || angebotModal.contact.id, {
+                          type: "quote", icon: "file-text",
+                          label: `Angebot gesendet: ${data.quoteNumber} | ${data.product} | ${Number(data.totalGross).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${data.currency}`,
+                          quoteId: qid, quoteNumber: data.quoteNumber, to: angebotModal.contact.email
+                        });
+                        notify(data.emailSent
+                          ? (lang === "tr" ? "Teklif gönderildi!" : lang === "en" ? "Quote sent!" : "Angebot gesendet!")
+                          : (lang === "tr" ? "Teklif kaydedildi (email gönderilemedi)" : "Angebot gespeichert (Email fehlgeschlagen)"));
+                        setAngebotModal(null); setQuotePreview(null);
+                      } else notify("Fehler: " + (data.error || "Unbekannt"), "error");
+                    } catch (e) { notify("Fehler: " + e.message, "error"); }
+                    finally { setIsGeneratingQuote(false); }
+                  }}
+                  style={{ ...S.btn(`linear-gradient(135deg,${T.ok},#1a8a3a)`, T.wh), opacity: isGeneratingQuote ? 0.6 : 1 }}
+                  disabled={isGeneratingQuote}>
+                  <Ic name="send" size={16} color={T.wh} />
+                  {isGeneratingQuote
+                    ? (lang === "tr" ? " Gönderiliyor..." : " Wird gesendet...")
+                    : (lang === "tr" ? " Kaydet + Gönder" : lang === "en" ? " Save + Send Email" : " Speichern + Email senden")}
+                </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ===== QUOTE VIEWER MODAL ===== */}
+      {quoteViewerModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1001, display: "flex", flexDirection: "column" }}>
+          <div style={{ background: T.sf, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${T.bd}` }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: T.tx }}>{quoteViewerModal.quoteNumber}</div>
+              <div style={{ fontSize: 11, color: T.txD }}>{quoteViewerModal.contactName} · {quoteViewerModal.createdAt?.slice(0, 10)}</div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => window.print()} style={{ background: T.acc, color: T.wh, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>
+                🖨 {lang === "tr" ? "Yazdır" : lang === "en" ? "Print" : "Drucken"}
+              </button>
+              <button onClick={() => setQuoteViewerModal(null)} style={{ background: T.bg, border: `1px solid ${T.bd}`, borderRadius: 8, padding: "8px 14px", cursor: "pointer", color: T.txM }}>✕</button>
+            </div>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", background: "#f5f5f5" }}>
+            <div dangerouslySetInnerHTML={{ __html: quoteViewerModal.htmlQuote }} />
           </div>
         </div>
       )}

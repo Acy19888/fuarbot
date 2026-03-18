@@ -165,6 +165,55 @@ export async function uploadCustomerAvatarBase64(contactId, dataUrl) {
 
 export function isFirebaseConfigured() { return !!db; }
 
+// ---- Quotes (Angebote) ----
+export async function saveQuote(quoteData) {
+  if (!db) return null;
+  try {
+    const docRef = await addDoc(collection(db, "quotes"), {
+      ...quoteData,
+      createdAt: new Date().toISOString(),
+    });
+    return docRef.id;
+  } catch (err) {
+    console.error("Save quote error:", err);
+    return null;
+  }
+}
+
+export async function getContactQuotes(userId, contactId) {
+  if (!db) return [];
+  try {
+    const { getDocs, query: fbQuery, where: fbWhere, orderBy: fbOrderBy } = await import("firebase/firestore");
+    const q = fbQuery(
+      collection(db, "quotes"),
+      fbWhere("userId", "==", userId),
+      fbWhere("contactId", "==", contactId),
+      fbOrderBy("createdAt", "desc")
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.error("Get quotes error:", err);
+    return [];
+  }
+}
+
+export function subscribeToContactQuotes(userId, contactId, callback) {
+  if (!db) { callback([]); return () => {}; }
+  const q = query(
+    collection(db, "quotes"),
+    where("userId", "==", userId),
+    where("contactId", "==", contactId),
+    orderBy("createdAt", "desc")
+  );
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  }, (err) => {
+    console.error("Quote subscription error:", err);
+    callback([]);
+  });
+}
+
 // ---- User Settings (SMTP etc.) ----
 export async function saveUserSettings(userId, settings) {
   if (!db) return;
