@@ -54,13 +54,14 @@ async function scanCard(base64, mediaType) {
   } catch { return null; }
 }
 
-async function sendEmail(to, contactName, messeName, salesPerson, smtp, customMessage, emailTemplates) {
+async function sendEmail(to, contactName, messeName, salesPerson, smtp, customMessage, emailTemplates, lang) {
   if (!smtp?.smtpHost || !smtp?.smtpUser || !smtp?.smtpPass) return null;
   try {
     const res = await fetch("/api/email", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         to, contactName, messeName, salesPerson,
+        lang,
         smtpHost: smtp.smtpHost, smtpPort: smtp.smtpPort,
         smtpUser: smtp.smtpUser, smtpPass: smtp.smtpPass,
         smtpFrom: smtp.smtpFrom || smtp.smtpUser,
@@ -1396,9 +1397,10 @@ export default function App() {
               if (!smtp.smtpHost || !smtp.smtpUser || !smtp.smtpPass) { notify(t("enterSmtpFirst"), "error"); return; }
               setSmtpTesting(true);
               const testTo = smtp.smtpFrom || smtp.smtpUser;
-              const result = await sendEmail(testTo, "Test", "Test-Messe", user?.displayName || "Test", smtp);
+              notify("Sende Test...", "info");
+              const result = await sendEmail(testTo, "Test", "Test-Messe", user?.displayName || "Test", smtp, "", {}, "de");
               setSmtpTesting(false);
-              if (result && result.success) notify(t("testSentTo") + " " + testTo + "!");
+              if (result?.success) notify("Test-Email gesendet!", "success");
               else notify(result?.error || t("testFailed"), "error");
             }} disabled={smtpTesting} style={{ ...S.btn(T.sf2, T.txM), border: `1px solid ${T.bd}`, padding: 12, fontSize: 13, fontWeight: 600, opacity: smtpTesting ? .6 : 1 }}>
               <Ic name="mail" size={14} color={T.txM} />
@@ -1501,7 +1503,8 @@ export default function App() {
                 if (savedId) addTimelineEvent(savedId, { type: "whatsapp", label: "WhatsApp gesendet", icon: "whatsapp", phone: waPhone, message: customMsg });
                 notify(t("whatsappCopied"));
               } else {
-                const emailResult = await sendEmail(contact.email, contact.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp, customMsg, emailTemplates);
+                const detectedLang = detectContactLang(contact.email, contact.name, contact.address);
+                const emailResult = await sendEmail(contact.email, contact.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp, customMsg, emailTemplates, detectedLang);
                 if (emailResult && emailResult.success) {
                   notify("Email gesendet!", "success");
                   const sid = savedId || contact.id;

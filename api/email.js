@@ -125,14 +125,14 @@ export default async function handler(req, res) {
     const {
       to, contactName, messeName, salesPerson,
       smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom,
-      companyName, catalogUrl, userPhone, avatar, customMessage, emailTemplates
+      companyName, catalogUrl, userPhone, avatar, customMessage, emailTemplates, lang: clientLang
     } = req.body;
 
     if (!to || !contactName) return res.status(400).json({ error: "Missing: to, contactName" });
     if (!smtpHost || !smtpUser || !smtpPass) return res.status(400).json({ error: "SMTP not configured" });
 
     // Detect language
-    const lang = detectLanguage(to, contactName);
+    const lang = clientLang || detectLanguage(to, contactName);
     const company = companyName || "Windoform";
     const catalog = catalogUrl || "https://windoform.de";
     const fromAddr = smtpFrom || smtpUser;

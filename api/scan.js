@@ -85,6 +85,18 @@ WICHTIG:
 
     try {
       const contact = JSON.parse(cleaned);
+
+      // Auto-fill website from email domain if missing (ignoring free providers)
+      if (!contact.website && contact.email) {
+        const domain = contact.email.split('@')[1]?.toLowerCase();
+        if (domain) {
+          const freemail = ['gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com', 'icloud.com', 'live.com', 'gmx.de', 'web.de', 't-online.de', 'yandex.com', 'mail.ru'];
+          if (!freemail.includes(domain)) {
+            contact.website = domain.startsWith('www.') ? domain : 'www.' + domain;
+          }
+        }
+      }
+
       return res.status(200).json({ success: true, contact });
     } catch (parseErr) {
       return res.status(200).json({ success: false, raw: text, error: "Could not parse response" });
