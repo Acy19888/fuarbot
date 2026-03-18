@@ -3,7 +3,8 @@ import {
   saveContactToFirebase, subscribeToContacts, isFirebaseConfigured,
   updateContactInFirebase, deleteContactFromFirebase,
   loginUser, registerUser, logoutUser, onAuthChange,
-  saveUserSettings, getUserSettings, addTimelineEvent, syncToCrm
+  saveUserSettings, getUserSettings, addTimelineEvent, syncToCrm,
+  uploadCustomerAvatarBase64
 } from "./firebase.js";
 import { detectSystemLanguage, useTranslation } from "./i18n.js";
 
@@ -440,19 +441,6 @@ export default function App() {
 
     const contactData = { ...enriched, emailSent: false, whatsappSent: false, savedAt: new Date().toISOString() };
 
-    // Upload customer photo if taken
-    if (capturedCustomerPic) {
-      try {
-        const { getStorage, ref, uploadString, getDownloadURL } = await import("firebase/storage");
-        const tempId = editingContact?.id || `new_${Date.now()}`;
-        const sRef = ref(getStorage(), `customers/${tempId}/avatar_${Date.now()}.jpg`);
-        await uploadString(sRef, capturedCustomerPic, "data_url");
-        contactData.customerAvatar = await getDownloadURL(sRef);
-      } catch (e) {
-        console.error("Avatar upload failed", e);
-      }
-    }
-
     // If editing existing contact, update instead of create
     let savedId = editingContact?.id;
     if (editingContact) {
@@ -460,14 +448,32 @@ export default function App() {
       notify(t("contactUpdated"));
       // Record edit event
       addTimelineEvent(editingContact.id, { type: "edit", label: "Kontakt bearbeitet", icon: "edit" });
-      await syncToCrm(editingContact.id, contactData, user, selectedMesse?.name ? `${selectedMesse.name} ${selectedMesse.city || ""}`.trim() : "");
     } else {
       savedId = await saveContactToFirebase(contactData);
       // Record scan event on first save
       if (savedId) {
         addTimelineEvent(savedId, { type: "scanned", label: "Visitenkarte gescannt", icon: "camera", messe: selectedMesse?.name + " " + selectedMesse?.city, scannedBy: user?.displayName || user?.email });
-        await syncToCrm(savedId, contactData, user, selectedMesse?.name ? `${selectedMesse.name} ${selectedMesse.city || ""}`.trim() : "");
       }
+    }
+
+    if (!savedId) return;
+
+    // Upload customer photo if taken AFTER document is created
+    if (capturedCustomerPic) {
+      try {
+        const url = await uploadCustomerAvatarBase64(savedId, capturedCustomerPic);
+        if (url) {
+          contactData.customerAvatar = url;
+          await updateContactInFirebase(savedId, { customerAvatar: url });
+        }
+      } catch (e) {
+        console.error("Avatar upload failed", e);
+      }
+    }
+
+    // CRM Sync (now includes avatar if uploaded)
+    if (savedId) {
+      await syncToCrm(savedId, contactData, user, selectedMesse?.name ? `${selectedMesse.name} ${selectedMesse.city || ""}`.trim() : "");
     }
 
     if (withContact) {
@@ -842,7 +848,7 @@ export default function App() {
 
           {/* Customer Avatar Capture */}
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 24, flexDirection: "column", alignItems: "center" }}>
-            <input type="file" accept="image/*" capture="environment" id="customerPicInput" style={{ display: "none" }} onChange={(e) => {
+            <input type="file" accept="image/*" id="customerPicInput" style={{ display: "none" }} onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) {
                 const r = new FileReader();

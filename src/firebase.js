@@ -143,6 +143,20 @@ export async function syncToCrm(contactId, contactData, user, messeName) {
   }
 }
 
+// ---- Customer Avatar Upload ----
+export async function uploadCustomerAvatarBase64(contactId, dataUrl) {
+  if (!app) return null;
+  try {
+    const { getStorage, ref, uploadString, getDownloadURL } = await import("firebase/storage");
+    const sRef = ref(getStorage(app), `customers/${contactId}/avatar_${Date.now()}.jpg`);
+    await uploadString(sRef, dataUrl, "data_url");
+    return await getDownloadURL(sRef);
+  } catch (err) {
+    console.error("Avatar upload error:", err);
+    return null;
+  }
+}
+
 
 export function isFirebaseConfigured() { return !!db; }
 
