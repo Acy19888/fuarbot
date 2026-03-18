@@ -1148,7 +1148,7 @@ export default function App() {
             <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>{t("language")}</h3>
             <div style={{ display: "flex", gap: 8 }}>
               {[{ code: "de", flag: "🇩🇪", label: "Deutsch" }, { code: "tr", flag: "🇹🇷", label: "Türkçe" }, { code: "en", flag: "🇬🇧", label: "English" }].map((l) => (
-                <button key={l.code} onClick={() => setLang(l.code)} style={{
+                <button key={l.code} onClick={() => { setLang(l.code); localStorage.setItem("fuarbot_lang", l.code); }} style={{
                   flex: 1, padding: "12px 8px", borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: "pointer",
                   background: lang === l.code ? T.accG : T.bg,
                   border: `1px solid ${lang === l.code ? T.acc : T.bd}`,

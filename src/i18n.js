@@ -492,6 +492,11 @@ const translations = {
 
 // Detect system language
 export function detectSystemLanguage() {
+  try {
+    const saved = localStorage.getItem("fuarbot_lang");
+    if (saved && ["de", "tr", "en"].includes(saved)) return saved;
+  } catch(e) {}
+
   const lang = (navigator.language || navigator.userLanguage || "en").toLowerCase();
   if (lang.startsWith("tr")) return "tr";
   if (lang.startsWith("de")) return "de";
