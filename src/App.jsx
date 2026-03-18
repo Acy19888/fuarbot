@@ -533,12 +533,12 @@ export default function App() {
       await updateContactInFirebase(editingContact.id, contactData);
       notify(t("contactUpdated"));
       // Record edit event
-      addTimelineEvent(editingContact.id, { type: "edit", label: "Kontakt bearbeitet", icon: "edit" });
+      addTimelineEvent(editingContact.id, { type: "edit", label: t("timelineContactEdited"), icon: "edit" });
     } else {
       savedId = await saveContactToFirebase(contactData);
       // Record scan event on first save
       if (savedId) {
-        addTimelineEvent(savedId, { type: "scanned", label: "Visitenkarte gescannt", icon: "camera", messe: selectedMesse?.name + " " + selectedMesse?.city, scannedBy: user?.displayName || user?.email });
+        addTimelineEvent(savedId, { type: "scanned", label: t("timelineCardScanned"), icon: "camera", messe: selectedMesse?.name + " " + selectedMesse?.city, scannedBy: user?.displayName || user?.email });
       }
     }
 
@@ -635,7 +635,7 @@ export default function App() {
       {toast && <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? T.acc : toast.type === "warn" ? T.warn : T.ok, color: toast.type === "warn" ? "#000" : T.wh, padding: "12px 24px", borderRadius: 14, fontSize: 13, fontWeight: 600, zIndex: 1000, animation: "toastIn .3s ease", boxShadow: "0 12px 40px rgba(0,0,0,.5)", maxWidth: "88%", textAlign: "center" }}>{toast.msg}</div>}
 
       {/* Email overlay */}
-      {emailSent && <div style={{ position: "fixed", inset: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(11,14,20,.92)", backdropFilter: "blur(16px)" }}><div style={{ textAlign: "center", animation: "burst .5s ease" }}><div style={{ width: 88, height: 88, borderRadius: "50%", background: T.okG, border: `2px solid ${T.ok}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}><Ic name="mail" size={36} color={T.ok} /></div><p style={{ fontSize: 20, fontWeight: 700 }}>Email gesendet!</p></div></div>}
+      {emailSent && <div style={{ position: "fixed", inset: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(11,14,20,.92)", backdropFilter: "blur(16px)" }}><div style={{ textAlign: "center", animation: "burst .5s ease" }}><div style={{ width: 88, height: 88, borderRadius: "50%", background: T.okG, border: `2px solid ${T.ok}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}><Ic name="mail" size={36} color={T.ok} /></div><p style={{ fontSize: 20, fontWeight: 700 }}>{t("emailSentSuccess")}</p></div></div>}
 
       {/* Duplicate Warning Modal */}
       {showDupeWarning && (
@@ -648,7 +648,7 @@ export default function App() {
               <h3 style={{ fontSize: 16, fontWeight: 700 }}>{t("possibleDuplicate")}</h3>
             </div>
             <p style={{ fontSize: 13, color: T.txM, lineHeight: 1.6, marginBottom: 16 }}>
-              Ein ähnlicher Kontakt existiert bereits:
+              {t("duplicateExists")}
             </p>
             <div style={{ background: T.bg, borderRadius: 10, padding: 14, border: `1px solid ${T.bd}`, marginBottom: 20 }}>
               <p style={{ fontSize: 14, fontWeight: 600, color: T.tx }}>{showDupeWarning.existing.name}</p>
@@ -656,13 +656,13 @@ export default function App() {
               <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>{showDupeWarning.existing.email}</p>
             </div>
             <button onClick={() => saveContact(showDupeWarning.withEmail, true)} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), marginBottom: 10, fontSize: 13, padding: 14 }}>
-              Trotzdem speichern
+              {t("saveAnyway")}
             </button>
             <button onClick={() => { startEditing(showDupeWarning.existing); setShowDupeWarning(null); }} style={{ ...S.btn(T.sf2, T.accS), border: `1px solid ${T.bd}`, marginBottom: 10, fontSize: 13, padding: 14 }}>
-              Bestehenden bearbeiten
+              {t("editExisting")}
             </button>
             <button onClick={() => { setShowDupeWarning(null); }} style={{ ...S.btn("transparent", T.txM), fontSize: 13, padding: 14 }}>
-              Abbrechen
+              {t("cancel")}
             </button>
           </div>
         </div>
@@ -673,7 +673,7 @@ export default function App() {
         <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(11,14,20,.92)", backdropFilter: "blur(12px)", padding: 20 }}>
           <div style={{ ...S.card, width: "100%", maxWidth: 600, height: "calc(100vh - 40px)", display: "flex", flexDirection: "column", animation: "slideUp .3s ease", overflow: "hidden" }}>
             <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.bd}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: T.sf }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700 }}>Gesendete E-Mail</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700 }}>{t("sentEmailViewTitle")}</h3>
               <button onClick={() => setViewingEmail(null)} style={{ background: "none", border: "none", color: T.txM, fontSize: 24, cursor: "pointer", lineHeight: 1 }}>&times;</button>
             </div>
             <div style={{ flex: 1, background: "#fff" }}>
@@ -783,8 +783,8 @@ export default function App() {
 
           <button onClick={() => setView("global-contacts")} style={{ ...S.card, width: "100%", padding: "20px 24px", marginBottom: 24, cursor: "pointer", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", background: `linear-gradient(135deg, ${T.acc}, #1E4080)`, border: "none" }}>
             <div>
-               <h3 style={{ fontSize: 17, fontWeight: 700, color: T.wh, marginBottom: 4 }}>Alle Kontakte</h3>
-               <p style={{ fontSize: 14, color: "rgba(255,255,255,0.8)", fontWeight: 500 }}>Gesamter Verlauf über alle Messen</p>
+               <h3 style={{ fontSize: 17, fontWeight: 700, color: T.wh, marginBottom: 4 }}>{t("allContactsGlobal")}</h3>
+               <p style={{ fontSize: 14, color: "rgba(255,255,255,0.8)", fontWeight: 500 }}>{t("allFairsHistory")}</p>
             </div>
             <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                <Ic name="users" size={18} color={T.wh} />
@@ -946,7 +946,7 @@ export default function App() {
         <div style={{ padding: "20px 20px 150px", animation: "slideUp .35s ease" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
             <button onClick={() => { setCurrent(null); setEditingContact(null); setView(editingContact ? "contacts" : "home"); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><Ic name="back" size={22} color={T.txM} /></button>
-            <h2 style={{ fontSize: 20, fontWeight: 700 }}>{editingContact ? "Kontakt bearbeiten" : "Kontakt prüfen"}</h2>
+            <h2 style={{ fontSize: 20, fontWeight: 700 }}>{editingContact ? t("editContact") : t("checkContact")}</h2>
           </div>
 
           {/* Customer Avatar Capture */}
@@ -1017,7 +1017,7 @@ export default function App() {
 
           {capturedImg && <div style={{ ...S.card, overflow: "hidden", marginBottom: 20, height: 140 }}><img src={capturedImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div>}
           <div style={{ ...S.card, padding: 20, marginBottom: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}><Ic name={editingContact ? "edit" : "zap"} size={14} color={editingContact ? T.accS : T.ok} /><span style={{ fontSize: 11, fontWeight: 700, color: editingContact ? T.accS : T.ok, textTransform: "uppercase", letterSpacing: ".06em" }}>{editingContact ? "Bearbeiten" : "AI-erkannt"}</span></div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}><Ic name={editingContact ? "edit" : "zap"} size={14} color={editingContact ? T.accS : T.ok} /><span style={{ fontSize: 11, fontWeight: 700, color: editingContact ? T.accS : T.ok, textTransform: "uppercase", letterSpacing: ".06em" }}>{editingContact ? t("editing") : t("aiRecognized")}</span></div>
             {[{ k: "name", l: t("name") }, { k: "company", l: t("firma") }, { k: "position", l: t("position") }, { k: "email", l: t("email") }, { k: "phone", l: t("phone") }, { k: "mobile", l: t("mobile") }, { k: "website", l: t("website") }, { k: "address", l: t("address") }, { k: "linkedin", l: "LinkedIn" }].map((f) => (
               <div key={f.k} style={{ marginBottom: 12 }}>
                 <label style={S.label}>{f.l}</label>
@@ -1153,8 +1153,7 @@ export default function App() {
                   onClick={() => setQuoteViewerModal(contactQuotes[0])}>
                   <Ic name="file-text" size={12} color={T.acc} />
                   <span style={{ fontSize: 11, color: T.acc, fontWeight: 700 }}>
-                    {lang === "tr" ? "Son Teklif" : lang === "en" ? "Last Quote" : "Letztes Angebot"}: 
-                    {Number(contactQuotes[0].totalGross).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {contactQuotes[0].currency || "€"}
+                    {t("lastQuoteLabel")}: {Number(contactQuotes[0].totalGross).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {contactQuotes[0].currency || "€"}
                   </span>
                 </div>
               )}
@@ -1190,11 +1189,11 @@ export default function App() {
                 setAngebotModal({ contact: c, savedId: c.id });
               }} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid ${T.acc}44`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: T.sf }}>
                 <Ic name="file-text" size={20} color={T.acc} />
-                <span style={{ fontSize: 11, color: T.acc, fontWeight: 700 }}>{lang === "tr" ? "Teklif" : lang === "en" ? "Quote" : "Angebot"}</span>
+                <span style={{ fontSize: 11, color: T.acc, fontWeight: 700 }}>{t("quoteLabel")}</span>
               </button>
               <button onClick={() => startEditing(c)} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid ${T.bd}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: T.sf }}>
                 <Ic name="edit" size={20} color={T.accS} />
-                <span style={{ fontSize: 11, color: T.txM, fontWeight: 600 }}>{lang === "tr" ? "Düzenle" : lang === "en" ? "Edit" : "Bearbeiten"}</span>
+                <span style={{ fontSize: 11, color: T.txM, fontWeight: 600 }}>{t("editLabel")}</span>
               </button>
             </div>
 
@@ -1223,7 +1222,7 @@ export default function App() {
                          if (isQuote && ev.quoteId) {
                            const q = contactQuotes.find(cq => cq.id === ev.quoteId);
                            if (q) setQuoteViewerModal(q);
-                           else notify(lang === "tr" ? "Teklif yükleniyor..." : "Angebot wird geladen...", "info");
+                           else notify(t("quoteLoading"), "info");
                          } else if (isEmail && hasHtml) {
                            setViewingEmail(ev.htmlBody);
                          } else if (isEmail) {
@@ -1472,10 +1471,10 @@ export default function App() {
               if (!smtp.smtpHost || !smtp.smtpUser || !smtp.smtpPass) { notify(t("enterSmtpFirst"), "error"); return; }
               setSmtpTesting(true);
               const testTo = smtp.smtpFrom || smtp.smtpUser;
-              notify("Sende Test...", "info");
+              notify(t("sendTestSending"), "info");
               const result = await sendEmail(testTo, "Test", "Test-Messe", user?.displayName || "Test", smtp, "", {}, "de");
               setSmtpTesting(false);
-              if (result?.success) notify("Test-Email gesendet!", "success");
+              if (result?.success) notify(t("testEmailSentSuccess"), "success");
               else notify(result?.error || t("testFailed"), "error");
             }} disabled={smtpTesting} style={{ ...S.btn(T.sf2, T.txM), border: `1px solid ${T.bd}`, padding: 12, fontSize: 13, fontWeight: 600, opacity: smtpTesting ? .6 : 1 }}>
               <Ic name="mail" size={14} color={T.txM} />
@@ -1566,13 +1565,13 @@ export default function App() {
               body: JSON.stringify({ question: q, contacts: allContacts, quotes: allQuotes, lang })
             });
             const data = await res.json();
-            const botMsgs = [...newMsgs, { role: "bot", text: data.answer || data.error || "Fehler" }];
+            const botMsgs = [...newMsgs, { role: "bot", text: data.answer || data.error || t("errorLabel") }];
             setChatMessages(botMsgs);
             setTimeout(() => {
               const el = document.getElementById("chat-messages");
               if (el) el.scrollTop = el.scrollHeight;
             }, 100);
-          } catch { setChatMessages([...newMsgs, { role: "bot", text: "Verbindungsfehler." }]); }
+          } catch { setChatMessages([...newMsgs, { role: "bot", text: t("aiConnectionError") }]); }
           setChatLoading(false);
         };
 
@@ -1587,7 +1586,7 @@ export default function App() {
                 <div style={{ fontWeight: 800, fontSize: 15, letterSpacing: "-.01em" }}>WINDOFORM AI</div>
                 <div style={{ fontSize: 11, color: T.ok, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.ok, display: "inline-block" }} />
-                  {allContacts.length} {lang === "tr" ? "kişi" : "Kontakte"} · {allQuotes.length} {lang === "tr" ? "teklif" : "Angebote"}
+                  {allContacts.length} {t("chatContacts")} · {allQuotes.length} {t("chatQuotesWord")}
                 </div>
               </div>
               <button onClick={() => setChatMessages(null)} style={{ background: "none", border: "none", cursor: "pointer", color: T.txD, fontSize: 11, padding: "4px 8px" }}>Reset</button>
@@ -1641,9 +1640,9 @@ export default function App() {
               {msgs.length <= 1 && (
                 <div style={{ display: "flex", gap: 6, marginBottom: 10, overflowX: "auto", paddingBottom: 2 }}>
                   {[
-                    lang === "tr" ? "Son teklif kim?" : "Letztes Angebot?",
-                    lang === "tr" ? "Tüm teklifler" : "Alle Angebote",
-                    lang === "tr" ? "Kaç kişi var?" : "Wieviele Kontakte?",
+                    t("chatSuggestion1"),
+                    t("chatSuggestion2"),
+                    t("chatSuggestion3"),
                   ].map((pill, pi) => (
                     <button key={pi} onClick={() => { setChatInput(pill); }} style={{
                       background: T.accG, border: `1px solid ${T.acc}44`, borderRadius: 20,
@@ -1658,7 +1657,7 @@ export default function App() {
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMsg(); } }}
-                  placeholder={lang === "tr" ? "Müşteri fiyatını sor..." : "Frag nach Kundenpreisen..."}
+                  placeholder={t("chatPlaceholder")}
                   style={{ flex: 1, background: T.bg, border: `1px solid ${T.bd}`, borderRadius: 22, padding: "11px 16px", fontSize: 14, color: T.tx, outline: "none", fontFamily: "'Montserrat',sans-serif" }}
                   onFocus={e => e.target.style.borderColor = T.acc}
                   onBlur={e => e.target.style.borderColor = T.bd}
@@ -1771,7 +1770,7 @@ export default function App() {
                   const message = getWhatsAppMessage(cl, scanData.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp.catalogUrl || "https://windoform.de");
                   setTimeout(() => { 
                     openWhatsApp(wPhone, message); 
-                    if (composeModal.savedId) addTimelineEvent(composeModal.savedId, { type: "whatsapp", label: "WhatsApp geöffnet (Auto)", icon: "whatsapp", phone: wPhone, message });
+                    if (composeModal.savedId) addTimelineEvent(composeModal.savedId, { type: "whatsapp", label: t("timelineWhatsAppAuto"), icon: "whatsapp", phone: wPhone, message });
                     notify(t("whatsappCopied")); 
                   }, 500);
                 }
@@ -1780,14 +1779,14 @@ export default function App() {
             
             <h3 style={{ fontSize: 18, color: T.tx, marginBottom: 8, marginTop: 0 }}>{composeModal.type === "whatsapp" ? "WhatsApp:" : t("emailTo")} {composeModal.contact.name}</h3>
             <p style={{ fontSize: 13, color: T.txM, marginBottom: 20 }}>
-              {composeModal.type === "whatsapp" 
-                ? (lang === "tr" ? "WhatsApp mesajını düzenle ve gönder." : lang === "en" ? "Edit and send WhatsApp message." : "WhatsApp-Nachricht bearbeiten und senden.")
+              {composeModal.type === "whatsapp"
+                ? t("whatsappEditDesc")
                 : t("aiEmailHint")}
             </p>
-            
+
             <label style={S.label}>
-              {composeModal.type === "whatsapp" 
-                ? (lang === "tr" ? "Mesaj Metni" : lang === "en" ? "Message Text" : "Nachrichtentext")
+              {composeModal.type === "whatsapp"
+                ? t("whatsappMsgLabel")
                 : t("customMsgLabel")}
             </label>
             <textarea
@@ -1814,9 +1813,9 @@ export default function App() {
                     setCustomMsg(data.result);
                     notify(t("aiSuccess"), "success");
                   } else {
-                    notify(t("aiError") + " " + (data.error || "Unbekannt"), "error");
+                    notify(t("aiError") + " " + (data.error || t("aiUnknownError")), "error");
                   }
-                } catch(e) { notify("Verbindungsfehler zur KI", "error"); }
+                } catch(e) { notify(t("aiConnectionError"), "error"); }
                 setIsGeneratingAI(false);
               }}
               style={{ width: "100%", padding: "12px", background: "linear-gradient(90deg, #10B981, #059669)", border: "none", borderRadius: 12, color: T.wh, fontSize: 13, fontWeight: 700, cursor: isGeneratingAI ? "not-allowed" : "pointer", marginBottom: 24, opacity: isGeneratingAI ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "opacity 0.2s" }}
@@ -1831,17 +1830,17 @@ export default function App() {
               
               if (type === "whatsapp") {
                 openWhatsApp(waPhone, customMsg);
-                if (savedId) addTimelineEvent(savedId, { type: "whatsapp", label: "WhatsApp gesendet", icon: "whatsapp", phone: waPhone, message: customMsg });
+                if (savedId) addTimelineEvent(savedId, { type: "whatsapp", label: t("timelineWhatsAppSent"), icon: "whatsapp", phone: waPhone, message: customMsg });
                 notify(t("whatsappCopied"));
               } else {
                 const detectedLang = detectContactLang(contact.email, contact.name, contact.address);
                 const emailResult = await sendEmail(contact.email, contact.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp, customMsg, emailTemplates, detectedLang);
                 if (emailResult && emailResult.success) {
-                  notify("Email gesendet!", "success");
+                  notify(t("emailSentSuccess"), "success");
                   const sid = savedId || contact.id;
-                  if (sid) addTimelineEvent(sid, { type: "email", label: "Email gesendet", icon: "mail", to: contact.email, htmlBody: emailResult.htmlBody });
+                  if (sid) addTimelineEvent(sid, { type: "email", label: t("timelineEmailSent"), icon: "mail", to: contact.email, htmlBody: emailResult.htmlBody });
                 } else {
-                  notify(emailResult?.error || "Fehler beim E-Mail Versand", "error");
+                  notify(emailResult?.error || t("emailSendError"), "error");
                 }
   
                 if (isNewScan && scanData) {
@@ -1851,7 +1850,7 @@ export default function App() {
                     const msg = getWhatsAppMessage(cl, scanData.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp.catalogUrl || "https://windoform.de");
                     setTimeout(() => { 
                       openWhatsApp(wPhone, msg); 
-                      if (savedId) addTimelineEvent(savedId, { type: "whatsapp", label: "WhatsApp geöffnet (Auto)", icon: "whatsapp", phone: wPhone, message: msg });
+                      if (savedId) addTimelineEvent(savedId, { type: "whatsapp", label: t("timelineWhatsAppAuto"), icon: "whatsapp", phone: wPhone, message: msg });
                       notify(t("whatsappCopied")); 
                     }, 1500);
                   }
@@ -1873,7 +1872,7 @@ export default function App() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: T.tx }}>
-                  {lang === "tr" ? "Teklif Oluştur" : lang === "en" ? "Create Quote" : "Angebot erstellen"}
+                  {t("createQuoteTitle")}
                 </div>
                 <div style={{ fontSize: 12, color: T.txD, marginTop: 2 }}>{angebotModal.contact.name}</div>
               </div>
@@ -1884,7 +1883,7 @@ export default function App() {
             {contactQuotes.length > 0 && (
               <div style={{ background: "rgba(43,85,151,0.08)", borderRadius: 10, padding: "10px 14px", marginBottom: 14 }}>
                 <div style={{ fontSize: 11, color: T.acc, fontWeight: 700, marginBottom: 6 }}>
-                  {lang === "tr" ? "Önceki Teklifler" : lang === "en" ? "Previous Quotes" : "Frühere Angebote"}
+                  {t("previousQuotesLabel")}
                 </div>
                 {contactQuotes.slice(0, 3).map(q => (
                   <div key={q.id} style={{ fontSize: 12, color: T.txM, padding: "3px 0", borderBottom: `1px solid rgba(43,85,151,0.1)` }}>
@@ -1900,12 +1899,12 @@ export default function App() {
             {!quotePreview && (
               <>
                 <label style={S.label}>
-                  {lang === "tr" ? "Teklif İsteğiniz" : lang === "en" ? "Describe the Quote" : "Angebot beschreiben"}
+                  {t("describeQuoteLabel")}
                 </label>
                 <textarea
                   value={angebotRequest}
                   onChange={e => setAngebotRequest(e.target.value)}
-                  placeholder={lang === "tr" ? "Örn: 5000 Ege Akustik RAL 9016" : lang === "en" ? "E.g. 5000 Ege Akustik RAL 9016" : "Bsp: 5000 Ege Akustik RAL 9016"}
+                  placeholder={t("quoteExamplePlaceholder")}
                   rows={4}
                   style={{ ...S.input, resize: "vertical", marginBottom: 14 }}
                 />
@@ -1940,10 +1939,10 @@ export default function App() {
                         setQuotePreview(data);
                         setEditableLines(data.lines || []);
                       } else {
-                        notify("KI-Fehler: " + (data.error || "Unbekannt"), "error");
+                        notify(t("kiFehlerLabel") + ": " + (data.error || t("aiUnknownError")), "error");
                       }
                     } catch (e) {
-                      notify("Fehler: " + e.message, "error");
+                      notify(t("errorLabel") + ": " + e.message, "error");
                     } finally {
                       setIsGeneratingQuote(false);
                     }
@@ -1951,9 +1950,7 @@ export default function App() {
                   style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), marginBottom: 8, opacity: isGeneratingQuote || !angebotRequest.trim() ? 0.6 : 1 }}
                 >
                   <Ic name="cpu" size={16} color={T.wh} />
-                  {isGeneratingQuote
-                    ? (lang === "tr" ? " Oluşturuluyor..." : lang === "en" ? " Generating..." : " Erstelle Angebot...")
-                    : (lang === "tr" ? " KI Teklif Oluştur" : lang === "en" ? " AI Generate Quote" : " KI erstellt Angebot")}
+                  {isGeneratingQuote ? " " + t("generatingQuoteBtn") : " " + t("generateQuoteBtnLabel")}
                 </button>
               </>
             )}
@@ -1971,14 +1968,14 @@ export default function App() {
                     <div style={{ fontSize: 20, fontWeight: 800, color: T.acc }}>
                       {editableLines.reduce((s, l) => s + (parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0), 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
-                    <div style={{ fontSize: 11, color: T.txD }}>{quotePreview.currency} (Netto)</div>
+                    <div style={{ fontSize: 11, color: T.txD }}>{quotePreview.currency} ({t("nettoLabel")})</div>
                   </div>
                 </div>
 
                 {/* Editable line items */}
                 <div style={{ marginBottom: 14 }}>
                   <div style={{ fontSize: 11, color: T.txD, marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>
-                    {lang === "tr" ? "Ürünler (düzenleyebilirsiniz)" : "Positionen (bearbeitbar)"}
+                    {t("quoteItemsEditable")}
                   </div>
                   {editableLines.map((line, i) => (
                     <div key={i} style={{ background: T.sf, borderRadius: 10, padding: 12, marginBottom: 8, border: `1px solid ${T.bd}` }}>
@@ -1986,7 +1983,7 @@ export default function App() {
                         <input
                           value={line.product}
                           onChange={e => { const l = [...editableLines]; l[i] = { ...l[i], product: e.target.value }; setEditableLines(l); }}
-                          placeholder="Produkt"
+                          placeholder={t("productLabel")}
                           style={{ ...S.input, flex: 2, fontSize: 13, fontWeight: 600, padding: "6px 10px" }}
                         />
                         <button onClick={() => { const l = editableLines.filter((_, j) => j !== i); setEditableLines(l); }}
@@ -1995,12 +1992,12 @@ export default function App() {
                       <input
                         value={line.description}
                         onChange={e => { const l = [...editableLines]; l[i] = { ...l[i], description: e.target.value }; setEditableLines(l); }}
-                        placeholder="Beschreibung"
+                        placeholder={t("descriptionLabel")}
                         style={{ ...S.input, width: "100%", fontSize: 12, padding: "5px 10px", marginBottom: 6, boxSizing: "border-box" }}
                       />
                       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 10, color: T.txD, marginBottom: 2 }}>Menge</div>
+                          <div style={{ fontSize: 10, color: T.txD, marginBottom: 2 }}>{t("qtyLabel")}</div>
                           <input type="number" min="1"
                             value={line.qty}
                             onChange={e => { const l = [...editableLines]; l[i] = { ...l[i], qty: e.target.value }; setEditableLines(l); }}
@@ -2008,7 +2005,7 @@ export default function App() {
                           />
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 10, color: T.txD, marginBottom: 2 }}>Stückpreis ({quotePreview.currency})</div>
+                          <div style={{ fontSize: 10, color: T.txD, marginBottom: 2 }}>{t("unitPriceLabel")} ({quotePreview.currency})</div>
                           <input type="number" min="0" step="0.01"
                             value={line.unitPrice}
                             onChange={e => { const l = [...editableLines]; l[i] = { ...l[i], unitPrice: e.target.value }; setEditableLines(l); }}
@@ -2025,12 +2022,12 @@ export default function App() {
                   ))}
                   <button onClick={() => setEditableLines([...editableLines, { product: "", description: "", qty: 1, unit: "Stk.", unitPrice: 0 }])}
                     style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}`, fontSize: 12, padding: "6px 14px" }}>
-                    + Position hinzufügen
+                    {t("addItemBtn")}
                   </button>
                 </div>
 
                 <button onClick={() => { setQuotePreview(null); setEditableLines([]); }} style={{ ...S.btn(T.sf, T.txM), marginBottom: 8, border: `1px solid ${T.bd}` }}>
-                  ← {lang === "tr" ? "Değiştir" : lang === "en" ? "Edit Request" : "Ändern"}
+                  ← {t("editRequestBtn")}
                 </button>
 
                 {/* Save only */}
@@ -2045,15 +2042,15 @@ export default function App() {
                   if (qid) {
                     addTimelineEvent(angebotModal.savedId || angebotModal.contact.id, {
                       type: "quote", icon: "file-text",
-                      label: `Angebot gespeichert: ${quotePreview.quoteNumber} | ${editableLines[0]?.product || quotePreview.product} | ${finalTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${quotePreview.currency}`,
+                      label: `${t("timelineQuoteSaved")}: ${quotePreview.quoteNumber} | ${editableLines[0]?.product || quotePreview.product} | ${finalTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${quotePreview.currency}`,
                       quoteId: qid, quoteNumber: quotePreview.quoteNumber
                     });
-                    notify(lang === "tr" ? "Teklif kaydedildi" : lang === "en" ? "Quote saved" : "Angebot gespeichert");
+                    notify(t("quoteSavedMsg"));
                     setAngebotModal(null); setQuotePreview(null); setEditableLines([]);
-                  } else notify("Speichern fehlgeschlagen", "error");
+                  } else notify(t("saveFailed"), "error");
                 }} style={{ ...S.btn(T.sf, T.txM), marginBottom: 8, border: `1px solid ${T.bd}` }}>
                   <Ic name="save" size={16} color={T.txM} />
-                  {lang === "tr" ? " Kaydet (göndermeden)" : lang === "en" ? " Save (no email)" : " Nur speichern"}
+                  {" " + t("saveNoEmailBtn")}
                 </button>
 
                 {/* Save + Send */}
@@ -2093,23 +2090,19 @@ export default function App() {
                         const qid = await saveQuote(qData);
                         addTimelineEvent(angebotModal.savedId || angebotModal.contact.id, {
                           type: "quote", icon: "file-text",
-                          label: `Angebot gesendet: ${data.quoteNumber} | ${editableLines[0]?.product || data.product} | ${finalTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${data.currency}`,
+                          label: `${t("timelineQuoteSent")}: ${data.quoteNumber} | ${editableLines[0]?.product || data.product} | ${finalTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${data.currency}`,
                           quoteId: qid, quoteNumber: data.quoteNumber, to: angebotModal.contact.email
                         });
-                        notify(data.emailSent
-                          ? (lang === "tr" ? "Teklif gönderildi!" : lang === "en" ? "Quote sent!" : "Angebot gesendet!")
-                          : (lang === "tr" ? "Teklif kaydedildi (email gönderilemedi)" : "Angebot gespeichert (Email fehlgeschlagen)"));
+                        notify(data.emailSent ? t("quoteSentMsg") : t("quoteSavedEmailFailedMsg"));
                         setAngebotModal(null); setQuotePreview(null); setEditableLines([]);
-                      } else notify("Fehler: " + (data.error || "Unbekannt"), "error");
-                    } catch (e) { notify("Fehler: " + e.message, "error"); }
+                      } else notify(t("errorLabel") + ": " + (data.error || t("aiUnknownError")), "error");
+                    } catch (e) { notify(t("errorLabel") + ": " + e.message, "error"); }
                     finally { setIsGeneratingQuote(false); }
                   }}
                   style={{ ...S.btn(`linear-gradient(135deg,${T.ok},#1a8a3a)`, T.wh), opacity: isGeneratingQuote ? 0.6 : 1 }}
                   disabled={isGeneratingQuote}>
                   <Ic name="send" size={16} color={T.wh} />
-                  {isGeneratingQuote
-                    ? (lang === "tr" ? " Gönderiliyor..." : " Wird gesendet...")
-                    : (lang === "tr" ? " Kaydet + Gönder" : lang === "en" ? " Save + Send Email" : " Speichern + Email senden")}
+                  {isGeneratingQuote ? " " + t("sendingQuoteBtn") : " " + t("saveAndSendEmailBtn")}
                 </button>
                 )}
               </>
@@ -2129,7 +2122,7 @@ export default function App() {
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={async () => {
                 try {
-                  notify(lang === "tr" ? "İndiriliyor..." : "Wird heruntergeladen...", "info");
+                  notify(t("downloadingLabel"), "info");
                   const html2pdf = (await import('html2pdf.js')).default;
                   const opt = {
                     margin:       0,
@@ -2141,7 +2134,7 @@ export default function App() {
                   html2pdf().set(opt).from(quoteViewerModal.htmlQuote).save();
                 } catch (err) {
                   console.error(err);
-                  notify("Fehler beim Download", "error");
+                  notify(t("downloadErrorMsg"), "error");
                 }
               }} style={{ background: T.acc, color: T.wh, border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
                 <Ic name="download" size={14} color={T.wh} /> <span>{lang === "tr" ? "PDF" : "PDF"}</span>
@@ -2149,7 +2142,7 @@ export default function App() {
 
               <button onClick={async () => {
                 try {
-                  notify(lang === "tr" ? "Paylaşılıyor..." : "Wird geteilt...", "info");
+                  notify(t("downloadingLabel"), "info");
                   const html2pdf = (await import('html2pdf.js')).default;
                   const opt = {
                     margin:       0,
@@ -2172,7 +2165,7 @@ export default function App() {
                   console.error(err);
                 }
               }} style={{ background: "#25D366", color: T.wh, border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                <Ic name="send" size={14} color={T.wh} /> <span>{lang === "tr" ? "Paylaş" : "Teilen"}</span>
+                <Ic name="send" size={14} color={T.wh} /> <span>{lang === "tr" ? "Paylaş" : lang === "en" ? "Share" : "Teilen"}</span>
               </button>
               <button onClick={() => setQuoteViewerModal(null)} style={{ background: T.bg, border: `1px solid ${T.bd}`, borderRadius: 8, padding: "10px 14px", cursor: "pointer", color: T.txM }}>✕</button>
             </div>
