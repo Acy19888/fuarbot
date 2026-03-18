@@ -1389,14 +1389,15 @@ export default function App() {
             />
             
             <button 
-              disabled={!customMsg || isGeneratingAI}
+              disabled={isGeneratingAI}
               onClick={async () => {
                 setIsGeneratingAI(true);
                 try {
                   const tl = detectContactLang(composeModal.contact.email, composeModal.contact.name, composeModal.contact.address);
+                  const sendPrompt = customMsg.trim() || "Schreibe eine kurze, herzliche und professionelle persönliche Nachricht für diesen Messebesucherkontakt.";
                   const res = await fetch("/api/ai", {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ prompt: customMsg, contactName: composeModal.contact.name, language: tl })
+                    body: JSON.stringify({ prompt: sendPrompt, contactName: composeModal.contact.name, language: tl })
                   });
                   const data = await res.json();
                   if (res.ok && data.result) {
@@ -1408,7 +1409,7 @@ export default function App() {
                 } catch(e) { notify("Verbindungsfehler zur KI", "error"); }
                 setIsGeneratingAI(false);
               }}
-              style={{ width: "100%", padding: "12px", background: "linear-gradient(90deg, #10B981, #059669)", border: "none", borderRadius: 12, color: T.wh, fontSize: 13, fontWeight: 700, cursor: (!customMsg || isGeneratingAI) ? "not-allowed" : "pointer", marginBottom: 24, opacity: (!customMsg || isGeneratingAI) ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "opacity 0.2s" }}
+              style={{ width: "100%", padding: "12px", background: "linear-gradient(90deg, #10B981, #059669)", border: "none", borderRadius: 12, color: T.wh, fontSize: 13, fontWeight: 700, cursor: isGeneratingAI ? "not-allowed" : "pointer", marginBottom: 24, opacity: isGeneratingAI ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "opacity 0.2s" }}
             >
               <Ic name="edit" size={16} /> {/* Using edit as a replacement for sparkles since sparkless may not exist in Ic */}
               {isGeneratingAI ? t("aiTranslating") : t("aiTranslateBtn")}
