@@ -92,17 +92,30 @@ function getWhatsAppMessage(lang, contactName, messeName, salesPerson, catalogUr
   return msgs[lang] || msgs.en;
 }
 
-function detectContactLang(email, name) {
+function detectContactLang(email, name, address) {
   const domain = (email || "").toLowerCase().split("@")[1] || "";
   const n = (name || "").toLowerCase();
+  const addr = (address || "").toLowerCase();
+
+  // Germany/Austria/Switzerland
+  const deDomains = [".de", ".at", ".ch"];
+  if (deDomains.some((d) => domain.endsWith(d)) || addr.includes("deutschland") || addr.includes("germany") || addr.includes("austria") || addr.includes("switzerland") || addr.includes("schweiz")) return "de";
+
+  // Turkey
   const trDomains = [".tr", ".com.tr"];
   const trChars = /[çğıöşüÇĞİÖŞÜ]/;
-  if (trDomains.some((d) => domain.endsWith(d)) || trChars.test(name || "")) return "tr";
-  const deDomains = [".de", ".at", ".ch"];
-  if (deDomains.some((d) => domain.endsWith(d))) return "de";
-  if (domain.endsWith(".es") || domain.endsWith(".mx")) return "es";
-  if (domain.endsWith(".fr") || domain.endsWith(".be")) return "fr";
-  if (domain.endsWith(".it")) return "it";
+  if (trDomains.some((d) => domain.endsWith(d)) || trChars.test(n) || addr.includes("turkey") || addr.includes("türkiye") || addr.includes("turkiye") || addr.includes("istanbul")) return "tr";
+
+  // Spain/Mexico
+  if (domain.endsWith(".es") || domain.endsWith(".mx") || addr.includes("spain") || addr.includes("españa") || addr.includes("mexico")) return "es";
+
+  // France
+  if (domain.endsWith(".fr") || domain.endsWith(".be") || addr.includes("france") || addr.includes("belgium")) return "fr";
+
+  // Italy
+  if (domain.endsWith(".it") || addr.includes("italy") || addr.includes("italia")) return "it";
+
+  // Default
   return "en";
 }
 
@@ -474,7 +487,7 @@ export default function App() {
       } else {
         const waPhone = getBestWhatsAppNumber(enriched);
         if (waPhone) {
-          const contactLang = detectContactLang(enriched.email, enriched.name);
+          const contactLang = detectContactLang(enriched.email, enriched.name, enriched.address);
           const catalog = smtp.catalogUrl || "https://windoform.de";
           const message = getWhatsAppMessage(contactLang, enriched.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, catalog);
           setComposeModal({ type: "whatsapp", contact: enriched, savedId, waPhone, isNewScan: true, scanData: enriched });
@@ -762,8 +775,11 @@ export default function App() {
           <button onClick={startCamera} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), marginBottom: 10, boxShadow: `0 8px 32px rgba(43,85,151,.4)`, padding: "20px", fontSize: 17 }}>
             <Ic name="camera" size={24} color={T.wh} /> {t("scanCard")}
           </button>
-          <button onClick={() => fileRef.current?.click()} style={{ ...S.btn("transparent", T.txM), border: `1px dashed ${T.bd}`, marginBottom: 28, padding: 14, fontSize: 14, fontWeight: 500 }}>
+          <button onClick={() => fileRef.current?.click()} style={{ ...S.btn("transparent", T.txM), border: `1px dashed ${T.bd}`, marginBottom: 10, padding: 14, fontSize: 14, fontWeight: 500 }}>
             {t("uploadPhoto")}
+          </button>
+          <button onClick={() => { setCurrent({ name: "", company: "", position: "", email: "", phone: "", mobile: "", website: "", address: "", notes: "" }); setCapturedImg(null); setCapturedCustomerPic(null); setEditingContact(null); setView("review"); }} style={{ ...S.btn("transparent", T.txM), border: `1px dashed ${T.bd}`, marginBottom: 28, padding: 14, fontSize: 14, fontWeight: 500 }}>
+            <Ic name="edit" size={18} color={T.txM} /> Manuell eintragen
           </button>
 
           {/* Contacts */}
@@ -1341,7 +1357,7 @@ export default function App() {
               if (type === "email" && isNewScan && scanData) {
                 const wPhone = getBestWhatsAppNumber(scanData);
                 if (wPhone) {
-                  const cl = detectContactLang(scanData.email, scanData.name);
+                  const cl = detectContactLang(scanData.email, scanData.name, scanData.address);
                   const message = getWhatsAppMessage(cl, scanData.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp.catalogUrl || "https://windoform.de");
                   setTimeout(() => { 
                     openWhatsApp(wPhone, message); 
@@ -1377,7 +1393,7 @@ export default function App() {
               onClick={async () => {
                 setIsGeneratingAI(true);
                 try {
-                  const tl = detectContactLang(composeModal.contact.email, composeModal.contact.name);
+                  const tl = detectContactLang(composeModal.contact.email, composeModal.contact.name, composeModal.contact.address);
                   const res = await fetch("/api/ai", {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ prompt: customMsg, contactName: composeModal.contact.name, language: tl })
@@ -1419,7 +1435,7 @@ export default function App() {
                 if (isNewScan && scanData) {
                   const wPhone = getBestWhatsAppNumber(scanData);
                   if (wPhone) {
-                    const cl = detectContactLang(scanData.email, scanData.name);
+                    const cl = detectContactLang(scanData.email, scanData.name, scanData.address);
                     const msg = getWhatsAppMessage(cl, scanData.name, selectedMesse?.name + " " + selectedMesse?.city, user?.displayName || user?.email, smtp.catalogUrl || "https://windoform.de");
                     setTimeout(() => { 
                       openWhatsApp(wPhone, msg); 

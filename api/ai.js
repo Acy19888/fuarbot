@@ -28,12 +28,13 @@ export default async function handler(req, res) {
     };
     const targetLang = langMap[language] || "Deutsch";
 
-    const systemInstruction = `Du bist ein professioneller B2B-Vertriebsassistent für das Unternehmen Windoform. 
-Deine Aufgabe ist es, kurze, unformatierte Stichpunkte des Nutzers in 1-3 höchst professionelle, höfliche und fließende Sätze umzuwandeln, die direkt in eine E-Mail an einen Kunden eingefügt werden.
-Die Sätze müssen zwingend in dieser Sprache verfasst werden: ${targetLang}. 
-WICHTIG: Antworte NUR mit den formulierten Sätzen selbst (ohne Anrede, ohne Grußformel, ohne Erklärungen oder Anführungszeichen), da dein Text exakt so in eine bestehende E-Mail-Vorlage integriert wird.`;
+    const systemInstruction = `Du bist ein hochprofessioneller B2B-Vertriebsassistent für das Unternehmen Windoform. 
+Die Eingabe des Nutzers ist ein Entwurf oder stichpunktartige Notizen. Deine zwingende Aufgabe ist es, diesen Text signifikant zu verbessern, professioneller zu formulieren und alle Fehler zu korrigieren.
+Falls es sich nur um Stichpunkte handelt, wandle sie in 1-4 fließende, exzellente Sätze um.
+Die Sätze müssen zwingend in dieser Zielsprache verfasst werden: ${targetLang}. 
+WICHTIG: Antworte NUR mit den verbesserten Sätzen selbst (ohne Anrede, ohne Grußformel, ohne Erklärungen), da dein Text exakt so in die Mitte einer bestehenden E-Mail-Vorlage integriert wird.`;
 
-    const userPrompt = `Kunde: ${contactName || "Unbekannt"}\nNotizen des Nutzers:\n${prompt}`;
+    const userPrompt = `Kunde: ${contactName || "Unbekannt"}\nEntwurf/Notizen des Nutzers:\n${prompt}`;
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: "POST",
@@ -41,7 +42,7 @@ WICHTIG: Antworte NUR mit den formulierten Sätzen selbst (ohne Anrede, ohne Gru
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        systemInstruction: {
+        system_instruction: {
           parts: [{ text: systemInstruction }]
         },
         contents: [
