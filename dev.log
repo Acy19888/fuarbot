@@ -1,0 +1,75 @@
+
+> fuarbot@2.0.0 dev
+> vite
+
+
+  VITE v6.4.1  ready in 287 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://192.168.1.2:5173/
+5:27:34 PM [vite] (client) hmr update /src/App.jsx
+5:36:56 PM [vite] (client) hmr update /src/App.jsx
+5:36:57 PM [vite] (client) ✨ new dependencies optimized: firebase/storage
+5:36:57 PM [vite] (client) ✨ optimized dependencies changed. reloading
+5:37:47 PM [vite] (client) hmr update /src/App.jsx
+5:41:56 PM [vite] (client) hmr update /src/App.jsx
+5:42:37 PM [vite] (client) hmr update /src/App.jsx
+5:46:58 PM [vite] (client) hmr update /src/App.jsx
+5:50:49 PM [vite] (client) hmr update /src/App.jsx
+5:53:24 PM [vite] (client) hmr update /src/App.jsx
+5:53:40 PM [vite] (client) hmr update /src/App.jsx
+5:53:53 PM [vite] (client) hmr update /src/App.jsx
+5:57:04 PM [vite] (client) hmr update /src/App.jsx
+5:57:25 PM [vite] (client) hmr update /src/App.jsx
+5:57:46 PM [vite] (client) hmr update /src/App.jsx
+5:58:04 PM [vite] (client) hmr update /src/App.jsx
+5:58:18 PM [vite] (client) hmr update /src/App.jsx
+6:02:31 PM [vite] (client) hmr update /src/App.jsx
+6:02:51 PM [vite] (client) hmr update /src/App.jsx
+6:05:44 PM [vite] (client) hmr update /src/App.jsx
+6:06:16 PM [vite] (client) hmr update /src/App.jsx
+6:06:57 PM [vite] (client) hmr update /src/App.jsx
+6:09:09 PM [vite] (client) hmr update /src/App.jsx
+6:09:12 PM [vite] (client) hmr update /src/App.jsx
+6:14:17 PM [vite] (client) hmr update /src/App.jsx
+6:14:39 PM [vite] (client) hmr update /src/App.jsx
+8:02:49 PM [vite] (client) hmr update /src/App.jsx
+8:05:26 PM [vite] (client) hmr update /src/App.jsx
+8:05:26 PM [vite] (client) hmr update /src/App.jsx
+8:05:36 PM [vite] (client) hmr update /src/App.jsx
+8:10:11 PM [vite] (client) hmr update /src/App.jsx
+8:26:51 PM [vite] (client) hmr update /src/App.jsx
+8:35:59 PM [vite] (client) hmr update /src/App.jsx
+8:36:22 PM [vite] (client) hmr update /src/App.jsx
+8:48:24 PM [vite] (client) hmr update /src/App.jsx
+8:49:02 PM [vite] (client) hmr update /src/App.jsx
+8:49:33 PM [vite] (client) hmr update /src/App.jsx
+8:52:02 PM [vite] (client) hmr update /src/App.jsx
+8:59:06 PM [vite] (client) hmr update /src/App.jsx
+8:59:30 PM [vite] (client) hmr update /src/App.jsx
+9:00:05 PM [vite] (client) hmr update /src/App.jsx
+9:00:47 PM [vite] (client) hmr update /src/App.jsx
+9:01:11 PM [vite] (client) hmr update /src/App.jsx
+9:02:18 PM [vite] (client) hmr update /src/App.jsx
+10:52:40 PM [vite] (client) hmr update /src/App.jsx
+10:55:18 PM [vite] (client) hmr update /src/App.jsx
+10:55:30 PM [vite] (client) hmr update /src/App.jsx
+10:57:51 PM [vite] (client) hmr update /src/App.jsx
+10:58:15 PM [vite] (client) hmr update /src/App.jsx
+11:01:34 PM [vite] (client) hmr update /src/App.jsx
+11:03:39 PM [vite] (client) hmr update /src/App.jsx
+11:08:34 PM [vite] (client) hmr update /src/App.jsx
+11:14:09 PM [vite] (client) hmr update /src/App.jsx
+11:16:11 PM [vite] (client) hmr update /src/App.jsx
+11:19:30 PM [vite] (client) hmr update /src/App.jsx
+11:19:49 PM [vite] (client) hmr update /src/App.jsx
+11:29:51 PM [vite] (client) hmr update /src/App.jsx
+11:30:47 PM [vite] (client) hmr update /src/App.jsx
+11:31:04 PM [vite] (client) hmr update /src/App.jsx
+11:31:58 PM [vite] (client) hmr update /src/App.jsx
+11:39:31 PM [vite] (client) hmr update /src/App.jsx
+11:46:24 PM [vite] (client) hmr update /src/App.jsx
+11:46:49 PM [vite] (client) hmr update /src/App.jsx
+11:51:23 PM [vite] (client) hmr update /src/App.jsx
+7:41:52 AM [vite] .env.local changed, restarting server...
+7:41:52 AM [vite] server restarted.

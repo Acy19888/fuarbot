@@ -62,20 +62,25 @@ export async function saveContactToFirebase(contact) {
 
 export function subscribeToContacts(userId, callback) {
   if (!db) { callback([]); return () => {}; }
+  let unsubFallback;
   const q = query(
     collection(db, "contacts"),
     where("userId", "==", userId),
     orderBy("createdAt", "desc")
   );
-  return onSnapshot(q, (snap) => {
+  const unsubMain = onSnapshot(q, (snap) => {
     callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
   }, () => {
     // Fallback if composite index not ready yet
     const fq = query(collection(db, "contacts"), orderBy("createdAt", "desc"));
-    onSnapshot(fq, (snap) => {
+    unsubFallback = onSnapshot(fq, (snap) => {
       callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((c) => c.userId === userId));
     });
   });
+  return () => {
+    unsubMain();
+    if (unsubFallback) unsubFallback();
+  };
 }
 
 export async function updateContactInFirebase(id, data) {
@@ -224,6 +229,25 @@ export function subscribeToContactQuotes(userId, contactId, callback) {
         docs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         callback(docs);
       });
+    });
+  });
+}
+
+export function subscribeToAllQuotes(userId, callback) {
+  if (!db) { callback([]); return () => {}; }
+  const q = query(
+    collection(db, "quotes"),
+    where("userId", "==", userId),
+    orderBy("createdAt", "desc")
+  );
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  }, () => {
+    // Fallback without composite index
+    const fq = query(collection(db, "quotes"), orderBy("createdAt", "desc"));
+    onSnapshot(fq, (snap) => {
+      callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+        .filter((q) => q.userId === userId));
     });
   });
 }

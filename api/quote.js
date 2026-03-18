@@ -77,26 +77,27 @@ function generateQuoteNumber() {
 // ============================================================
 function buildHtmlQuote({ quoteNumber, date, company, salesPerson, userPhone, contact, lines, totalNet, vat, totalGross, currency, notes, lang }) {
   const L = {
-    de: { title: "Angebot", pos: "Pos.", product: "Produkt / Beschreibung", qty: "Menge", unit: "Einheit", unitPrice: "Einzelpreis", total: "Gesamtpreis", net: "Gesamtbetrag (Netto)", vatLabel: "MwSt.", gross: "Bruttobetrag", validity: "Gültigkeit", validityVal: "30 Tage", delivery: "Lieferbedingungen", deliveryVal: "EXW (Ex Works)", payment: "Zahlungsbedingungen", paymentVal: "30 Tage netto", greeting: "Sehr geehrte Damen und Herren,", closing: "Mit freundlichen Grüßen" },
-    tr: { title: "Teklif", pos: "Pos.", product: "Ürün / Açıklama", qty: "Miktar", unit: "Birim", unitPrice: "Birim Fiyat", total: "Toplam Fiyat", net: "Toplam Tutar (Net)", vatLabel: "KDV", gross: "Brüt Tutar", validity: "Geçerlilik", validityVal: "30 gün", delivery: "Teslimat Şekli", deliveryVal: "EXW (Ex Works)", payment: "Ödeme Koşulları", paymentVal: "30 gün net", greeting: "Sayın Yetkili,", closing: "Saygılarımla" },
-    en: { title: "Quotation", pos: "Pos.", product: "Product / Description", qty: "Qty", unit: "Unit", unitPrice: "Unit Price", total: "Total", net: "Total Amount (Net)", vatLabel: "VAT", gross: "Gross Amount", validity: "Validity", validityVal: "30 days", delivery: "Delivery Terms", deliveryVal: "EXW (Ex Works)", payment: "Payment Terms", paymentVal: "30 days net", greeting: "Dear Sir or Madam,", closing: "Best regards" }
+    de: { title: "Angebot", pos: "Pos.", product: "Produkt / Beschreibung", qty: "Menge", unit: "Einheit", unitStr: "Stk.", unitPrice: "Einzelpreis", total: "Gesamtpreis", net: "Gesamtbetrag (Netto)", vatLabel: "MwSt.", gross: "Bruttobetrag", validity: "Gültigkeit", validityVal: "30 Tage", delivery: "Lieferbedingungen", deliveryVal: "EXW (Ex Works)", payment: "Zahlungsbedingungen", paymentVal: "30 Tage netto", greeting: "Sehr geehrte Damen und Herren,", closing: "Mit freundlichen Grüßen", to: "Angeboten an", from: "Von" },
+    tr: { title: "Teklif", pos: "Pos.", product: "Ürün / Açıklama", qty: "Miktar", unit: "Birim", unitStr: "Adet", unitPrice: "Birim Fiyat", total: "Toplam Fiyat", net: "Toplam Tutar (Net)", vatLabel: "KDV", gross: "Brüt Tutar", validity: "Geçerlilik", validityVal: "30 gün", delivery: "Teslimat Şekli", deliveryVal: "EXW (Ex Works)", payment: "Ödeme Koşulları", paymentVal: "30 gün net", greeting: "Sayın Yetkili,", closing: "Saygılarımla", to: "Teklif Sunulan", from: "Teklifi Sunan" },
+    en: { title: "Quotation", pos: "Pos.", product: "Product / Description", qty: "Qty", unit: "Unit", unitStr: "pcs", unitPrice: "Unit Price", total: "Total", net: "Total Amount (Net)", vatLabel: "VAT", gross: "Gross Amount", validity: "Validity", validityVal: "30 days", delivery: "Delivery Terms", deliveryVal: "EXW (Ex Works)", payment: "Payment Terms", paymentVal: "30 days net", greeting: "Dear Sir or Madam,", closing: "Best regards", to: "Offered to", from: "From" }
   };
-  const l = L[lang] || L.de;
+  const l = L[lang] || L.en;
   const sym = currency === "USD" ? "$" : currency === "GBP" ? "£" : "€";
-  const fmt = (n) => Number(n).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + sym;
+  const locale = lang === "de" ? "de-DE" : lang === "tr" ? "tr-TR" : "en-US";
+  const fmt = (n) => Number(n).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + sym;
 
   const rows = lines.map((line, i) => `
     <tr style="border-bottom:1px solid #f0f0f0;">
       <td style="padding:10px 8px;color:#555;font-size:13px;">${i + 1}</td>
       <td style="padding:10px 8px;color:#333;font-size:13px;line-height:1.5;"><strong>${line.product}</strong>${line.description ? `<br><span style="color:#888;font-size:12px;">${line.description}</span>` : ""}</td>
       <td style="padding:10px 8px;text-align:right;color:#555;font-size:13px;">${line.qty}</td>
-      <td style="padding:10px 8px;text-align:center;color:#555;font-size:13px;">${line.unit || "Stk."}</td>
+      <td style="padding:10px 8px;text-align:center;color:#555;font-size:13px;">${line.unit || l.unitStr}</td>
       <td style="padding:10px 8px;text-align:right;color:#555;font-size:13px;">${fmt(line.unitPrice)}</td>
       <td style="padding:10px 8px;text-align:right;color:#333;font-size:13px;font-weight:600;">${fmt(line.qty * line.unitPrice)}</td>
     </tr>`).join("");
 
   return `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=800">
 <title>${l.title} ${quoteNumber}</title></head>
 <body style="margin:0;padding:0;font-family:'Segoe UI',Helvetica,Arial,sans-serif;background:#f5f5f5;">
 <div style="max-width:700px;margin:24px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.1);">
@@ -116,7 +117,7 @@ function buildHtmlQuote({ quoteNumber, date, company, salesPerson, userPhone, co
   <!-- Contact + Company -->
   <div style="padding:32px 40px 0;display:flex;justify-content:space-between;gap:40px;">
     <div>
-      <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Angeboten an</div>
+      <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">${l.to}</div>
       <div style="font-size:14px;color:#333;line-height:1.8;">
         <strong>${contact.name}</strong><br>
         ${contact.company ? contact.company + "<br>" : ""}
@@ -125,7 +126,7 @@ function buildHtmlQuote({ quoteNumber, date, company, salesPerson, userPhone, co
       </div>
     </div>
     <div style="text-align:right;">
-      <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Von</div>
+      <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">${l.from}</div>
       <div style="font-size:14px;color:#333;line-height:1.8;">
         <strong>${company}</strong><br>
         ${salesPerson}<br>
@@ -195,6 +196,58 @@ function buildHtmlQuote({ quoteNumber, date, company, salesPerson, userPhone, co
 }
 
 // ============================================================
+// Product Database + Keyword Lookup
+// ============================================================
+const WINDOFORM_PRODUCTS = [
+  { keys: ["asya", "asya akustik", "asya acoustic"], en: "Asya Acoustic Series", tr: "Asya Akustik Serisi", type: "acoustic window handle" },
+  { keys: ["alfa", "alfa akustik", "alfa acoustic"], en: "Alfa Acoustic Series", tr: "Alfa Akustik Serisi", type: "acoustic window handle" },
+  { keys: ["atlas"], en: "Atlas Series", tr: "Atlas Serisi", type: "window handle" },
+  { keys: ["siena"], en: "Siena Series", tr: "Siena Serisi", type: "window handle" },
+  { keys: ["belgrad", "belgrade"], en: "Belgrad Series", tr: "Belgrad Serisi", type: "window handle" },
+  { keys: ["ege"], en: "Ege Series", tr: "Ege Serisi", type: "window handle" },
+  { keys: ["porto"], en: "Porto Series", tr: "Porto Serisi", type: "window handle" },
+  { keys: ["istanbul", "istanbul akustik", "istanbul acoustic"], en: "Istanbul Acoustic Series", tr: "Istanbul Akustik Serisi", type: "acoustic window handle" },
+  { keys: ["sydney", "sydney akustik", "sydney acoustic"], en: "Sydney Acoustic Series", tr: "Sydney Akustik Serisi", type: "acoustic window handle" },
+  { keys: ["poznan"], en: "Poznan Series", tr: "Poznan Serisi", type: "window handle" },
+  { keys: ["milano", "milan"], en: "Milano Series", tr: "Milano Serisi", type: "window handle" },
+  { keys: ["ibiza"], en: "Ibiza Series", tr: "Ibiza Serisi", type: "window handle" },
+  { keys: ["izmir", "İzmir"], en: "Izmir Series", tr: "Izmir Serisi", type: "window handle" },
+  { keys: ["mostar"], en: "Mostar Series", tr: "Mostar Serisi", type: "window handle" },
+  { keys: ["lara"], en: "Lara Series", tr: "Lara Serisi", type: "window handle" },
+  { keys: ["basik", "zero", "basik kollar"], en: "Zero Series", tr: "Basik Kollar Serisi", type: "flat handle" },
+  { keys: ["munih", "munich", "münchen"], en: "Munich Series", tr: "Munih Serisi", type: "window handle" },
+  { keys: ["paris serisi", "paris series"], en: "Paris Series", tr: "Paris Serisi", type: "window handle" },
+  { keys: ["kiev", "kyiv"], en: "Kyiv Series", tr: "Kiev Serisi", type: "window handle" },
+  { keys: ["bagdat", "baghdad", "bağdat"], en: "Baghdad Series", tr: "Bagdat Serisi", type: "window handle" },
+  { keys: ["parisyen"], en: "Parisyen Series", tr: "Parisyen Serisi", type: "window handle" },
+  { keys: ["hebe schiebe", "hebe"], en: "Hebe Schiebe Series", tr: "Hebe Schiebe Serisi", type: "lift-slide handle" },
+  { keys: ["smyrna"], en: "Smyrna Series", tr: "Smyrna Serisi", type: "window handle" },
+  { keys: ["trendy"], en: "Trendy Series", tr: "Trendy Serisi", type: "window handle" },
+  { keys: ["basma kollar", "lever door", "basma"], en: "Lever Door Series", tr: "Basma Kollar Serisi", type: "lever door handle" },
+  { keys: ["santafe", "granada", "santafe granada"], en: "Santafe-Granada Series", tr: "Santafe Granada Serisi", type: "door handle" },
+  { keys: ["toledo"], en: "Toledo Series", tr: "Toledo Serisi", type: "door handle" },
+  { keys: ["tiran", "tirana"], en: "Tiran Series", tr: "Tiran Serisi", type: "window handle" },
+  { keys: ["madrid"], en: "Madrid Series", tr: "Madrid Serisi", type: "door handle" },
+  { keys: ["metsa kollar", "metsa handle", "metsa"], en: "Metsa Handle Series", tr: "Metsa Kollar Serisi", type: "handle" },
+  { keys: ["surme", "sürme", "sliding"], en: "Sliding Series", tr: "Surme Serisi", type: "sliding door handle" },
+  { keys: ["metsa d", "d tipi", "dtype"], en: "Metsa DType Handle", tr: "Metsa D Tipi Kol", type: "handle" },
+  { keys: ["mentese", "menteşe", "hinge", "hinges"], en: "Hinges", tr: "Menteseler", type: "hinge" },
+  { keys: ["karsilik", "karşılık", "opposite", "strike plate"], en: "Opposite (Strike Plates)", tr: "Karsiliklar", type: "strike plate" },
+  { keys: ["panjur", "shutter lock"], en: "Shutter Lock", tr: "Panjur Kilidi", type: "shutter lock" },
+  { keys: ["montajmatik", "hinge installation", "installation kit"], en: "Hinge Installation Kit", tr: "Montajmatik", type: "installation kit" },
+  { keys: ["havalandirma", "ventilation", "latch", "mandal"], en: "Ventilation (Security) Latch", tr: "Havalandirma Mandali", type: "ventilation latch" },
+];
+
+function findMatchingProducts(userRequest) {
+  const lower = userRequest.toLowerCase();
+  const matched = WINDOFORM_PRODUCTS.filter(p =>
+    p.keys.some(k => lower.includes(k.toLowerCase()))
+  );
+  if (matched.length === 0) return null;
+  return matched.map(p => `- ${p.en} (${p.tr}): ${p.type}`).join("\n");
+}
+
+// ============================================================
 // Handler
 // ============================================================
 export default async function handler(req, res) {
@@ -224,10 +277,21 @@ export default async function handler(req, res) {
 
     // Build previous quotes context
     const prevCtx = previousQuotes && previousQuotes.length > 0
-      ? `\n\nPrevious quotes for this customer:\n${previousQuotes.slice(0, 5).map(q => `- ${q.quoteNumber}: ${q.product} @ ${q.totalPrice} ${q.currency} (${q.createdAt?.slice(0,10)})`).join("\n")}`
+      ? `\n\nPrevious quotes for this customer:\n${previousQuotes.slice(0, 5).map(q => `- ${q.quoteNumber}: ${q.product} @ ${q.totalPrice} ${q.currency} (${q.createdAt?.slice(0, 10)})`).join("\n")}`
       : "";
 
-    const prompt = `You are a professional B2B sales assistant for ${company}, a window and building facade manufacturer.
+    // Smart product lookup - only inject matched products, not full catalog
+    const matchedProducts = findMatchingProducts(userRequest);
+    const productCtx = matchedProducts
+      ? `\nMatched Windoform product(s) for this request:\n${matchedProducts}\nUse the correct product name from above in the quote.`
+      : `\nNo specific product matched. Use the product name as written by the user.`;
+
+    const prompt = `You are a professional B2B sales assistant for ${company}.
+
+COMPANY: WINDOFORM® - Turkish manufacturer of door and window handles for aluminum/PVC profiles. EXW pricing, no VAT for export. Currency: EUR. Payment: 30 days net.
+RAL 9016 = Verkehrsweiss (white). All prices are NET EXW.
+${productCtx}
+
 The user wants to create a quote. Parse the request and return ONLY valid JSON (no markdown, no code fences).
 
 User request: "${userRequest}"
@@ -237,10 +301,11 @@ Sales person: ${salesPerson || ""}
 ${prevCtx}
 
 Instructions:
-- RAL codes like "RAL 9016" or "9016" → look up the German color name
+- RAL codes like "RAL 9016" or "9016" -> always include German color name. RAL 9016 = Verkehrsweiss (white)
 - Extract: product name, quantity, unit price (or total price if given), any special notes
 - If only total given (e.g. "5000"), set unitPrice = total / qty (default qty=1 if not given)
 - Generate a professional product description including RAL color if present
+- All prices are NET (no VAT) - EXW export pricing
 - lang: "${lang || "de"}"
 
 Return JSON:
@@ -282,6 +347,7 @@ Return JSON:
     // Calculate totals
     const lines = parsed.lines || [];
     const totalNet = lines.reduce((s, l) => s + (l.qty * l.unitPrice), 0);
+    const totalGross = totalNet; // No VAT for Turkish exports (EXW terms)
     const currency = parsed.currency || "EUR";
 
     // Enhance RAL description in lines

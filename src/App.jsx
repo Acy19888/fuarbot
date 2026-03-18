@@ -4,7 +4,7 @@ import {
   updateContactInFirebase, deleteContactFromFirebase,
   loginUser, registerUser, logoutUser, onAuthChange,
   saveUserSettings, getUserSettings, addTimelineEvent, syncToCrm,
-  uploadCustomerAvatarBase64, saveQuote, getContactQuotes, subscribeToContactQuotes
+  uploadCustomerAvatarBase64, saveQuote, getContactQuotes, subscribeToContactQuotes, subscribeToAllQuotes
 } from "./firebase.js";
 import { detectSystemLanguage, useTranslation } from "./i18n.js";
 
@@ -231,6 +231,9 @@ function Ic({ name, size = 20, color = T.tx }) {
     wifiOff: <svg {...p}><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><circle cx="12" cy="20" r="1" fill={color}/></svg>,
     whatsapp: <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>,
     "file-text": <svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
+    send: <svg {...p}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
+    ai: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M12 16a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2z"/><path d="M4.93 4.93a2 2 0 0 1 2.83 0l1.41 1.41a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0L4.93 7.76a2 2 0 0 1 0-2.83z"/><path d="M14.83 14.83a2 2 0 0 1 2.83 0l1.41 1.41a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-1.41-1.41a2 2 0 0 1 0-2.83z"/><path d="M2 12a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2 2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/><path d="M16 12a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z"/><path d="M4.93 19.07a2 2 0 0 1 0-2.83l1.41-1.41a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-1.41 1.41a2 2 0 0 1-2.83 0z"/><path d="M14.83 9.17a2 2 0 0 1 0-2.83l1.41-1.41a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-1.41 1.41a2 2 0 0 1-2.83 0z"/></svg>,
+    bot: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="15" x2="8" y2="17"/><line x1="16" y1="15" x2="16" y2="17"/></svg>,
   };
   return icons[name] || null;
 }
@@ -241,6 +244,7 @@ function Ic({ name, size = 20, color = T.tx }) {
 export default function App() {
   // Auth state
   const [user, setUser] = useState(undefined); // undefined=loading, null=logged out
+  const [winWidth, setWinWidth] = useState(window.innerWidth);
   const [authView, setAuthView] = useState("login"); // login | register
   const [authEmail, setAuthEmail] = useState("");
   const [authPass, setAuthPass] = useState("");
@@ -273,8 +277,8 @@ export default function App() {
   ];
 
   // App state
-  const [view, setView] = useState("home");
-  const [contacts, setContacts] = useState([]);
+  const [view, setView] = useState("home"); // home | contacts | scan | review | contactDetail | messen | global-contacts
+  const [allContacts, setAllContacts] = useState([]);
   const [current, setCurrent] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [capturedImg, setCapturedImg] = useState(null);
@@ -303,11 +307,22 @@ export default function App() {
   const [quotePreview, setQuotePreview] = useState(null);
   const [contactQuotes, setContactQuotes] = useState([]);
   const [quoteViewerModal, setQuoteViewerModal] = useState(null);
+  const [editableLines, setEditableLines] = useState([]);
+  const [allQuotes, setAllQuotes] = useState([]);
+  const [chatMessages, setChatMessages] = useState(null); // null = not initialized
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const canvasRef = useRef(null);
   const fileRef = useRef(null);
+
+  // Subscribe to all quotes for the current user
+  useEffect(() => {
+    if (!user) return;
+    return subscribeToAllQuotes(user.uid, setAllQuotes);
+  }, [user?.uid]);
 
   // Listen for auth changes
   useEffect(() => {
@@ -330,22 +345,48 @@ export default function App() {
     });
   }, []);
 
-  // Subscribe to contacts when user + messe selected
+  // Subscribe to ALL contacts for user
   useEffect(() => {
-    if (!user || !selectedMesse) return;
-    const unsub = subscribeToContacts(user.uid, (data) => {
-      setContacts(data.filter((c) => c.messeId === selectedMesse.id));
-    });
+    if (!user) { setAllContacts([]); return; }
+    const unsub = subscribeToContacts(user.uid, setAllContacts);
     return unsub;
-  }, [user, selectedMesse]);
+  }, [user]);
 
-  // Subscribe to quotes for the currently viewed contact
+  // Derive contacts based on view
+  const contacts = view === "global-contacts" ? allContacts : (selectedMesse ? allContacts.filter(c => c.messeId === selectedMesse.id) : []);
+
+  // Subscribe to quotes for the currently viewed contact across all their scans (same email)
   useEffect(() => {
-    const viewedId = selectedContact?.id;
-    if (!user || !viewedId) { setContactQuotes([]); return; }
-    const unsub = subscribeToContactQuotes(user.uid, viewedId, setContactQuotes);
-    return unsub;
-  }, [user, selectedContact?.id]);
+    const viewedContact = selectedContact;
+    if (!user || !viewedContact) { setContactQuotes([]); return; }
+
+    let idsToQuery = [viewedContact.id];
+    if (viewedContact.email) {
+      idsToQuery = allContacts
+        .filter(ac => ac.email && ac.email.toLowerCase() === viewedContact.email.toLowerCase())
+        .map(ac => ac.id);
+    }
+    // Remove duplicates
+    idsToQuery = [...new Set(idsToQuery)];
+
+    let allQuotesMap = {};
+    const unsubs = idsToQuery.map(id => {
+      return subscribeToContactQuotes(user.uid, id, (data) => {
+        allQuotesMap[id] = data;
+        const merged = [].concat(...Object.values(allQuotesMap));
+        merged.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setContactQuotes(merged);
+      });
+    });
+
+    return () => unsubs.forEach(u => u());
+  }, [user, selectedContact, allContacts]);
+
+  useEffect(() => {
+    const handleResize = () => setWinWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => () => stopCamera(), []);
 
@@ -390,7 +431,7 @@ export default function App() {
   const handleLogout = async () => {
     await logoutUser();
     setSelectedMesse(null);
-    setContacts([]);
+    setAllContacts([]);
     setView("home");
   };
 
@@ -723,7 +764,7 @@ export default function App() {
       )}
 
       {/* ============ MESSE SELECTION ============ */}
-      {user && !selectedMesse && view !== "scan" && (
+      {user && !selectedMesse && view === "home" && (
         <div style={{ minHeight: "100vh", padding: "40px 24px", animation: "fadeIn .4s" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 36 }}>
             <div>
@@ -739,6 +780,16 @@ export default function App() {
             <Ic name="map" size={20} color={T.acc} />
             <h2 style={{ fontSize: 18, fontWeight: 700 }}>{t("selectMesse")}</h2>
           </div>
+
+          <button onClick={() => setView("global-contacts")} style={{ ...S.card, width: "100%", padding: "20px 24px", marginBottom: 24, cursor: "pointer", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", background: `linear-gradient(135deg, ${T.acc}, #1E4080)`, border: "none" }}>
+            <div>
+               <h3 style={{ fontSize: 17, fontWeight: 700, color: T.wh, marginBottom: 4 }}>Alle Kontakte</h3>
+               <p style={{ fontSize: 14, color: "rgba(255,255,255,0.8)", fontWeight: 500 }}>Gesamter Verlauf über alle Messen</p>
+            </div>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+               <Ic name="users" size={18} color={T.wh} />
+            </div>
+          </button>
 
           {MESSEN.map((m, i) => (
             <button key={m.id} onClick={() => setSelectedMesse(m)} style={{
@@ -785,11 +836,10 @@ export default function App() {
           </div>
 
           {/* Stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 28 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
             {[
               { l: t("total"), v: stats.total, c: T.acc },
               { l: t("today"), v: stats.today, c: T.accS },
-              { l: t("emails"), v: stats.emailed, c: T.ok },
             ].map((s, i) => (
               <div key={i} style={{ ...S.card, padding: "14px 16px", textAlign: "center", animation: `slideUp .4s ease ${i * .07}s both` }}>
                 <span style={{ fontSize: 11, color: T.txM, fontWeight: 500, textTransform: "uppercase", letterSpacing: ".05em", display: "block", marginBottom: 6 }}>{s.l}</span>
@@ -797,6 +847,22 @@ export default function App() {
               </div>
             ))}
           </div>
+          {/* Quote Revenue Stats */}
+          {allQuotes.length > 0 && (() => {
+            const revenue = allQuotes.reduce((s, q) => s + (parseFloat(q.totalGross) || 0), 0);
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 28 }}>
+                <div style={{ ...S.card, padding: "14px 16px", textAlign: "center", animation: "slideUp .4s ease .14s both", background: `linear-gradient(135deg,${T.okG},rgba(0,0,0,0))` }}>
+                  <span style={{ fontSize: 11, color: T.ok, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".05em", display: "block", marginBottom: 6 }}>{t("quotes")}</span>
+                  <span style={{ fontSize: 26, fontWeight: 800, color: T.ok, fontFamily: "'JetBrains Mono',monospace" }}>{allQuotes.length}</span>
+                </div>
+                <div style={{ ...S.card, padding: "14px 16px", textAlign: "center", animation: "slideUp .4s ease .21s both", background: `linear-gradient(135deg,rgba(255,165,0,0.12),rgba(0,0,0,0))` }}>
+                  <span style={{ fontSize: 11, color: "#ff9500", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".05em", display: "block", marginBottom: 4 }}>{t("potentialRevenue")}</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: "#ff9500", fontFamily: "'JetBrains Mono',monospace" }}>{revenue.toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €</span>
+                </div>
+              </div>
+            );
+          })()}
 
           <button onClick={startCamera} style={{ ...S.btn(`linear-gradient(135deg,${T.acc},#1E4080)`, T.wh), marginBottom: 10, boxShadow: `0 8px 32px rgba(43,85,151,.4)`, padding: "20px", fontSize: 17 }}>
             <Ic name="camera" size={24} color={T.wh} /> {t("scanCard")}
@@ -1003,12 +1069,12 @@ export default function App() {
         </div>
       )}
 
-      {/* ============ CONTACTS ============ */}
-      {view === "contacts" && (
+      {/* ============ CONTACTS LIST (Local & Global) ============ */}
+      {(view === "contacts" || view === "global-contacts") && (
         <div style={{ padding: "20px 20px 110px", animation: "fadeIn .3s" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
             <button onClick={() => setView("home")} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><Ic name="back" size={22} color={T.txM} /></button>
-            <h2 style={{ fontSize: 18, fontWeight: 700, flex: 1 }}>{t("myContacts")} <span style={{ fontSize: 13, color: T.txM, fontWeight: 400 }}>({contacts.length})</span></h2>
+            <h2 style={{ fontSize: 18, fontWeight: 700, flex: 1 }}>{view === "global-contacts" ? "Alle Kontakte" : t("myContacts")} <span style={{ fontSize: 13, color: T.txM, fontWeight: 400 }}>({contacts.length})</span></h2>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, ...S.card, padding: "10px 16px", marginBottom: 20 }}><Ic name="search" size={16} color={T.txD} /><input type="text" placeholder={t("search")} value={searchQ} onChange={(e) => setSearchQ(e.target.value)} style={{ flex: 1, background: "none", border: "none", color: T.tx, fontSize: 14, outline: "none" }} /></div>
           {filtered.map((c, i) => (
@@ -1048,7 +1114,18 @@ export default function App() {
       {view === "contactDetail" && selectedContact && (() => {
         const c = selectedContact;
         const waPhone = getBestWhatsAppNumber(c);
-        const timeline = [...(c.timeline || [])].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        // Merge timeline events across all contacts with same email
+        let mergedTimeline = [];
+        if (c.email) {
+          const sameEmailContacts = allContacts.filter(ac => ac.email && ac.email.toLowerCase() === c.email.toLowerCase());
+          sameEmailContacts.forEach(ac => {
+            if (ac.timeline) mergedTimeline.push(...ac.timeline.map(ev => ({ ...ev, _sourceId: ac.id, _fallbackMesse: ac.messe })));
+          });
+        } else {
+          mergedTimeline = [...(c.timeline || [])];
+        }
+        const timeline = mergedTimeline.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         const tlIconColor = { scanned: T.acc, email: T.ok, whatsapp: "#25D366", edit: T.warn };
         const tlBg = { scanned: T.accG, email: T.okG, whatsapp: "rgba(37,211,102,.12)", edit: "rgba(251,191,36,.12)" };
         return (
@@ -1111,11 +1188,9 @@ export default function App() {
                 setAngebotRequest("");
                 setQuotePreview(null);
                 setAngebotModal({ contact: c, savedId: c.id });
-              }} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid ${T.bd}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: T.sf }}>
+              }} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid ${T.acc}44`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: T.sf }}>
                 <Ic name="file-text" size={20} color={T.acc} />
-                <span style={{ fontSize: 11, color: T.txM, fontWeight: 600 }}>
-                  {lang === "tr" ? "Teklif" : lang === "en" ? "Quote" : "Angebot"}
-                </span>
+                <span style={{ fontSize: 11, color: T.acc, fontWeight: 700 }}>{lang === "tr" ? "Teklif" : lang === "en" ? "Quote" : "Angebot"}</span>
               </button>
               <button onClick={() => startEditing(c)} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid ${T.bd}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: T.sf }}>
                 <Ic name="edit" size={20} color={T.accS} />
@@ -1155,7 +1230,7 @@ export default function App() {
                            // Fallback for old emails
                            const fallback = `<html><body style="font-family:sans-serif;padding:30px;color:#333;line-height:1.6;max-width:600px;margin:0 auto;">
                              <h2 style="margin-top:0;">${t("emailPreviewUnavailable")}</h2>
-                             <p>${t("emailWasSentTo")} <b>${c.name}</b> ${t("regarding")} <b>${ev.messe || selectedMesse?.name || ""}</b>.</p>
+                             <p>${t("emailWasSentTo")} <b>${c.name}</b> ${t("regarding")} <b>${ev.messe || ev._fallbackMesse || selectedMesse?.name || ""}</b>.</p>
                              <p style="color:#666;background:#f5f5f5;padding:16px;border-radius:8px;font-size:14px;margin-top:24px;">
                                <i>${t("emailPreviewHint")}</i>
                              </p>
@@ -1180,7 +1255,7 @@ export default function App() {
                   {/* Text */}
                   <div style={{ flex: 1, paddingTop: 4 }}>
                     <p style={{ fontSize: 14, fontWeight: 600, color: canClick ? T.acc : T.tx, marginBottom: 2 }}>{ev.label}</p>
-                    {ev.messe && <p style={{ fontSize: 11, color: T.accS }}>{ev.messe}</p>}
+                    {(ev.messe || ev._fallbackMesse) && <p style={{ fontSize: 11, color: T.accS }}>{ev.messe || ev._fallbackMesse}</p>}
                     {ev.to && <p style={{ fontSize: 11, color: T.txD }}>{ev.to}</p>}
                     {ev.phone && <p style={{ fontSize: 11, color: T.txD }}>{ev.phone}</p>}
                     {ev.scannedBy && <p style={{ fontSize: 11, color: T.txD }}>von {ev.scannedBy}</p>}
@@ -1410,15 +1485,178 @@ export default function App() {
         </div>
       )}
 
+      {/* ============ CHAT VIEW ============ */}
+      {user && view === "chat" && (() => {
+        const msgs = chatMessages || [{ role: "bot", text: t("chatGreeting") }];
+        return (
+          <div style={{ display: "flex", flexDirection: "column", height: "100dvh", paddingBottom: 90 }}>
+            {/* Header */}
+            <div style={{ padding: "20px 20px 12px", background: T.sf, borderBottom: `1px solid ${T.bd}`, display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg,${T.acc},#1E4080)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Ic name="ai" size={18} color={T.wh} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 15 }}>WINDOFORM AI</div>
+                <div style={{ fontSize: 11, color: T.ok, fontWeight: 600 }}>● Online · {allContacts.length} {lang === "tr" ? "kişi" : lang === "en" ? "contacts" : "Kontakte"} · {allQuotes.length} {lang === "tr" ? "teklif" : lang === "en" ? "quotes" : "Angebote"}</div>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 4px", display: "flex", flexDirection: "column", gap: 10 }}>
+              {msgs.map((m, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                  {m.role === "bot" && (
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: `linear-gradient(135deg,${T.acc},#1E4080)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginRight: 8, marginTop: 2 }}>
+                      <Ic name="ai" size={13} color={T.wh} />
+                    </div>
+                  )}
+                  <div style={{ maxWidth: "78%", padding: "10px 14px", borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: m.role === "user" ? `linear-gradient(135deg,${T.acc},#1E4080)` : T.sf2, color: m.role === "user" ? T.wh : T.tx, fontSize: 14, lineHeight: 1.55, whiteSpace: "pre-wrap", wordBreak: "break-word", boxShadow: m.role === "user" ? `0 4px 12px ${T.acc}44` : "none" }}>
+                    {m.text}
+                  </div>
+                </div>
+              ))}
+              {chatLoading && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: `linear-gradient(135deg,${T.acc},#1E4080)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Ic name="ai" size={13} color={T.wh} />
+                  </div>
+                  <div style={{ background: T.sf2, borderRadius: "18px 18px 18px 4px", padding: "12px 16px" }}>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {[0,1,2].map(j => <div key={j} style={{ width: 6, height: 6, borderRadius: "50%", background: T.txD, animation: `pulse 1.2s ease ${j*0.2}s infinite` }} />)}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input */}
+            <div style={{ position: "fixed", bottom: 70, left: "50%", transform: "translateX(-50%)", maxWidth: 480, width: "100%", padding: "10px 16px", background: T.sf, borderTop: `1px solid ${T.bd}`, display: "flex", gap: 8 }}>
+              <input
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                onKeyDown={async e => {
+                  if (e.key === "Enter" && !e.shiftKey && chatInput.trim() && !chatLoading) {
+                    e.preventDefault();
+                    const q = chatInput.trim();
+                    setChatInput("");
+                    const newMsgs = [...msgs, { role: "user", text: q }];
+                    setChatMessages(newMsgs);
+                    setChatLoading(true);
+                    try {
+                      const res = await fetch("/api/chat", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ question: q, contacts: allContacts, quotes: allQuotes, lang })
+                      });
+                      const data = await res.json();
+                      setChatMessages([...newMsgs, { role: "bot", text: data.answer || data.error || "Fehler" }]);
+                    } catch { setChatMessages([...newMsgs, { role: "bot", text: "Verbindungsfehler." }]); }
+                    setChatLoading(false);
+                  }
+                }}
+                placeholder={t("chatPlaceholder")}
+                style={{ flex: 1, background: T.bg, border: `1px solid ${T.bd}`, borderRadius: 12, padding: "10px 14px", fontSize: 14, color: T.tx, outline: "none" }}
+              />
+              <button
+                disabled={!chatInput.trim() || chatLoading}
+                onClick={async () => {
+                  const q = chatInput.trim();
+                  if (!q || chatLoading) return;
+                  setChatInput("");
+                  const newMsgs = [...msgs, { role: "user", text: q }];
+                  setChatMessages(newMsgs);
+                  setChatLoading(true);
+                  try {
+                    const res = await fetch("/api/chat", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ question: q, contacts: allContacts, quotes: allQuotes, lang })
+                    });
+                    const data = await res.json();
+                    setChatMessages([...newMsgs, { role: "bot", text: data.answer || data.error || "Fehler" }]);
+                  } catch { setChatMessages([...newMsgs, { role: "bot", text: "Verbindungsfehler." }]); }
+                  setChatLoading(false);
+                }}
+                style={{ width: 44, height: 44, borderRadius: 12, background: chatInput.trim() && !chatLoading ? `linear-gradient(135deg,${T.acc},#1E4080)` : T.sf2, border: "none", cursor: chatInput.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Ic name="send" size={18} color={chatInput.trim() && !chatLoading ? T.wh : T.txD} />
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ============ QUOTES VIEW ============ */}
+      {user && selectedMesse && view === "quotes" && (
+        <div style={{ padding: "24px 20px 110px", animation: "fadeIn .3s" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+            <Ic name="file-text" size={22} color={T.acc} />
+            <h1 style={{ fontSize: 20, fontWeight: 800 }}>{t("quotes")}</h1>
+          </div>
+
+          {/* Revenue summary */}
+          {allQuotes.length > 0 && (() => {
+            const total = allQuotes.reduce((s, q) => s + (parseFloat(q.totalGross) || 0), 0);
+            const sent = allQuotes.filter(q => q.status === "sent").length;
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
+                <div style={{ ...S.card, padding: "12px", textAlign: "center" }}>
+                  <div style={{ fontSize: 10, color: T.txD, fontWeight: 600, textTransform: "uppercase", marginBottom: 4 }}>{t("totalQuotes")}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: T.acc }}>{allQuotes.length}</div>
+                </div>
+                <div style={{ ...S.card, padding: "12px", textAlign: "center" }}>
+                  <div style={{ fontSize: 10, color: T.ok, fontWeight: 600, textTransform: "uppercase", marginBottom: 4 }}>{t("sent")}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: T.ok }}>{sent}</div>
+                </div>
+                <div style={{ ...S.card, padding: "12px", textAlign: "center" }}>
+                  <div style={{ fontSize: 10, color: "#ff9500", fontWeight: 600, textTransform: "uppercase", marginBottom: 4 }}>{t("revenue")}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#ff9500" }}>{total.toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €</div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {allQuotes.length === 0 && (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: T.txD }}>
+              <Ic name="file-text" size={48} color={T.bd} />
+              <p style={{ marginTop: 16, fontSize: 15, fontWeight: 500 }}>{t("noQuotes")}</p>
+              <p style={{ fontSize: 13, color: T.txD, marginTop: 4 }}>{t("noQuotesHint")}</p>
+            </div>
+          )}
+
+          {allQuotes.map((q, i) => (
+            <div key={q.id} onClick={() => setQuoteViewerModal(q)}
+              style={{ ...S.card, padding: "14px 16px", marginBottom: 10, cursor: "pointer", animation: `slideUp .3s ease ${i * .04}s both`, display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: q.status === "sent" ? T.okG : `linear-gradient(135deg,${T.sf2},${T.bd})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Ic name={q.status === "sent" ? "send" : "file-text"} size={18} color={q.status === "sent" ? T.ok : T.txM} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{q.quoteNumber}</div>
+                <div style={{ fontSize: 12, color: T.txM, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{q.contactName} {q.product ? `· ${q.product}` : ""}</div>
+                <div style={{ fontSize: 11, color: T.txD, marginTop: 2 }}>{q.createdAt ? new Date(q.createdAt).toLocaleDateString("de-DE") : ""}</div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <div style={{ fontWeight: 800, fontSize: 16, color: T.acc }}>{Number(q.totalGross || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div style={{ fontSize: 11, color: T.txD }}>{q.currency || "EUR"}</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: q.status === "sent" ? T.ok : T.txD, textTransform: "uppercase", marginTop: 2 }}>
+                  {q.status === "sent" ? `✓ ${t("sent")}` : t("draft")}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* ============ NAV ============ */}
-      {user && selectedMesse && view !== "scan" && (
+      {user && (selectedMesse || view === "chat" || view === "global-contacts") && view !== "scan" && (
         <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", maxWidth: 480, width: "100%", background: T.sf, borderTop: `1px solid ${T.bd}`, display: "flex", justifyContent: "space-around", padding: "12px 0 28px", zIndex: 100 }}>
           {[
             { id: "home", i: "camera", l: t("navScan") },
             { id: "contacts", i: "users", l: t("navContacts") },
+            { id: "quotes", i: "file-text", l: t("navQuotes") },
+            { id: "chat", i: "ai", l: t("navChat") },
             { id: "settings", i: "db", l: t("navSetup") },
           ].map((nav) => (
-            <button key={nav.id} onClick={() => setView(nav.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "4px 20px" }}>
+            <button key={nav.id} onClick={() => setView(nav.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "4px 10px" }}>
               <Ic name={nav.i} size={20} color={(view === nav.id || (nav.id === "contacts" && view === "contactDetail")) ? T.acc : T.txD} />
               <span style={{ fontSize: 10, fontWeight: 600, color: (view === nav.id || (nav.id === "contacts" && view === "contactDetail")) ? T.acc : T.txD, textTransform: "uppercase", letterSpacing: ".05em" }}>{nav.l}</span>
             </button>
@@ -1607,6 +1845,7 @@ export default function App() {
                       const data = await res.json();
                       if (data.success) {
                         setQuotePreview(data);
+                        setEditableLines(data.lines || []);
                       } else {
                         notify("KI-Fehler: " + (data.error || "Unbekannt"), "error");
                       }
@@ -1629,43 +1868,95 @@ export default function App() {
             {/* Preview + actions */}
             {quotePreview && (
               <>
-                <div style={{ borderRadius: 10, overflow: "hidden", border: `1px solid ${T.bd}`, marginBottom: 14, height: 320 }}>
-                  <iframe srcDoc={quotePreview.htmlQuote} title="Quote Preview" style={{ width: "100%", height: "100%", border: "none", background: "#fff" }} />
-                </div>
-                <div style={{ background: T.sf, borderRadius: 10, padding: "12px 16px", marginBottom: 14, display: "flex", justifyContent: "space-between" }}>
+                {/* Header info */}
+                <div style={{ background: T.sf, borderRadius: 10, padding: "12px 16px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <div style={{ fontSize: 12, color: T.txD }}>{quotePreview.quoteNumber}</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: T.tx }}>{quotePreview.product}</div>
-                    {quotePreview.ralCode && <div style={{ fontSize: 12, color: T.txM }}>RAL {quotePreview.ralCode} · {quotePreview.ralColorName}</div>}
+                    <div style={{ fontSize: 11, color: T.txD }}>{quotePreview.quoteNumber}</div>
+                    {quotePreview.ralCode && <div style={{ fontSize: 11, color: T.txM }}>RAL {quotePreview.ralCode} · {quotePreview.ralColorName}</div>}
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: 20, fontWeight: 800, color: T.acc }}>
-                      {Number(quotePreview.totalGross).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {editableLines.reduce((s, l) => s + (parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0), 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
-                    <div style={{ fontSize: 12, color: T.txD }}>{quotePreview.currency} inkl. MwSt.</div>
+                    <div style={{ fontSize: 11, color: T.txD }}>{quotePreview.currency} (Netto)</div>
                   </div>
                 </div>
 
-                <button onClick={() => { setQuotePreview(null); }} style={{ ...S.btn(T.sf, T.txM), marginBottom: 8, border: `1px solid ${T.bd}` }}>
+                {/* Editable line items */}
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, color: T.txD, marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>
+                    {lang === "tr" ? "Ürünler (düzenleyebilirsiniz)" : "Positionen (bearbeitbar)"}
+                  </div>
+                  {editableLines.map((line, i) => (
+                    <div key={i} style={{ background: T.sf, borderRadius: 10, padding: 12, marginBottom: 8, border: `1px solid ${T.bd}` }}>
+                      <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                        <input
+                          value={line.product}
+                          onChange={e => { const l = [...editableLines]; l[i] = { ...l[i], product: e.target.value }; setEditableLines(l); }}
+                          placeholder="Produkt"
+                          style={{ ...S.input, flex: 2, fontSize: 13, fontWeight: 600, padding: "6px 10px" }}
+                        />
+                        <button onClick={() => { const l = editableLines.filter((_, j) => j !== i); setEditableLines(l); }}
+                          style={{ background: "none", border: "none", color: T.err, fontSize: 16, cursor: "pointer", padding: "0 4px" }}>✕</button>
+                      </div>
+                      <input
+                        value={line.description}
+                        onChange={e => { const l = [...editableLines]; l[i] = { ...l[i], description: e.target.value }; setEditableLines(l); }}
+                        placeholder="Beschreibung"
+                        style={{ ...S.input, width: "100%", fontSize: 12, padding: "5px 10px", marginBottom: 6, boxSizing: "border-box" }}
+                      />
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 10, color: T.txD, marginBottom: 2 }}>Menge</div>
+                          <input type="number" min="1"
+                            value={line.qty}
+                            onChange={e => { const l = [...editableLines]; l[i] = { ...l[i], qty: e.target.value }; setEditableLines(l); }}
+                            style={{ ...S.input, width: "100%", fontSize: 13, padding: "6px 10px", boxSizing: "border-box" }}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 10, color: T.txD, marginBottom: 2 }}>Stückpreis ({quotePreview.currency})</div>
+                          <input type="number" min="0" step="0.01"
+                            value={line.unitPrice}
+                            onChange={e => { const l = [...editableLines]; l[i] = { ...l[i], unitPrice: e.target.value }; setEditableLines(l); }}
+                            style={{ ...S.input, width: "100%", fontSize: 13, padding: "6px 10px", boxSizing: "border-box" }}
+                          />
+                        </div>
+                        <div style={{ flex: 1, textAlign: "right", paddingTop: 18 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: T.acc }}>
+                            {((parseFloat(line.qty) || 0) * (parseFloat(line.unitPrice) || 0)).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {quotePreview.currency}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <button onClick={() => setEditableLines([...editableLines, { product: "", description: "", qty: 1, unit: "Stk.", unitPrice: 0 }])}
+                    style={{ ...S.btn(T.sf, T.txM), border: `1px solid ${T.bd}`, fontSize: 12, padding: "6px 14px" }}>
+                    + Position hinzufügen
+                  </button>
+                </div>
+
+                <button onClick={() => { setQuotePreview(null); setEditableLines([]); }} style={{ ...S.btn(T.sf, T.txM), marginBottom: 8, border: `1px solid ${T.bd}` }}>
                   ← {lang === "tr" ? "Değiştir" : lang === "en" ? "Edit Request" : "Ändern"}
                 </button>
 
                 {/* Save only */}
                 <button onClick={async () => {
+                  const finalTotal = editableLines.reduce((s, l) => s + (parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0), 0);
                   const qData = {
                     userId: user.uid, contactId: angebotModal.contact.id || angebotModal.savedId,
                     contactName: angebotModal.contact.name, contactEmail: angebotModal.contact.email,
-                    ...quotePreview, status: "draft"
+                    ...quotePreview, lines: editableLines, totalNet: finalTotal, totalGross: finalTotal, status: "draft"
                   };
                   const qid = await saveQuote(qData);
                   if (qid) {
                     addTimelineEvent(angebotModal.savedId || angebotModal.contact.id, {
                       type: "quote", icon: "file-text",
-                      label: `Angebot gespeichert: ${quotePreview.quoteNumber} | ${quotePreview.product} | ${Number(quotePreview.totalGross).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${quotePreview.currency}`,
+                      label: `Angebot gespeichert: ${quotePreview.quoteNumber} | ${editableLines[0]?.product || quotePreview.product} | ${finalTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${quotePreview.currency}`,
                       quoteId: qid, quoteNumber: quotePreview.quoteNumber
                     });
                     notify(lang === "tr" ? "Teklif kaydedildi" : lang === "en" ? "Quote saved" : "Angebot gespeichert");
-                    setAngebotModal(null); setQuotePreview(null);
+                    setAngebotModal(null); setQuotePreview(null); setEditableLines([]);
                   } else notify("Speichern fehlgeschlagen", "error");
                 }} style={{ ...S.btn(T.sf, T.txM), marginBottom: 8, border: `1px solid ${T.bd}` }}>
                   <Ic name="save" size={16} color={T.txM} />
@@ -1699,21 +1990,23 @@ export default function App() {
                       });
                       const data = await res.json();
                       if (data.success) {
+                        const finalTotal = editableLines.reduce((s, l) => s + (parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0), 0);
                         const qData = {
                           userId: user.uid, contactId: angebotModal.contact.id || angebotModal.savedId,
                           contactName: angebotModal.contact.name, contactEmail: angebotModal.contact.email,
-                          ...data, status: data.emailSent ? "sent" : "draft", sentAt: data.emailSent ? new Date().toISOString() : null
+                          ...data, lines: editableLines, totalNet: finalTotal, totalGross: finalTotal,
+                          status: data.emailSent ? "sent" : "draft", sentAt: data.emailSent ? new Date().toISOString() : null
                         };
                         const qid = await saveQuote(qData);
                         addTimelineEvent(angebotModal.savedId || angebotModal.contact.id, {
                           type: "quote", icon: "file-text",
-                          label: `Angebot gesendet: ${data.quoteNumber} | ${data.product} | ${Number(data.totalGross).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${data.currency}`,
+                          label: `Angebot gesendet: ${data.quoteNumber} | ${editableLines[0]?.product || data.product} | ${finalTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${data.currency}`,
                           quoteId: qid, quoteNumber: data.quoteNumber, to: angebotModal.contact.email
                         });
                         notify(data.emailSent
                           ? (lang === "tr" ? "Teklif gönderildi!" : lang === "en" ? "Quote sent!" : "Angebot gesendet!")
                           : (lang === "tr" ? "Teklif kaydedildi (email gönderilemedi)" : "Angebot gespeichert (Email fehlgeschlagen)"));
-                        setAngebotModal(null); setQuotePreview(null);
+                        setAngebotModal(null); setQuotePreview(null); setEditableLines([]);
                       } else notify("Fehler: " + (data.error || "Unbekannt"), "error");
                     } catch (e) { notify("Fehler: " + e.message, "error"); }
                     finally { setIsGeneratingQuote(false); }
@@ -1734,16 +2027,16 @@ export default function App() {
 
       {/* ===== QUOTE VIEWER MODAL ===== */}
       {quoteViewerModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1001, display: "flex", flexDirection: "column" }}>
-          <div style={{ background: T.sf, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${T.bd}` }}>
+        <div style={{ position: "fixed", inset: 0, background: T.bg, zIndex: 1100, display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.bd}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: T.sf }}>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: T.tx }}>{quoteViewerModal.quoteNumber}</div>
-              <div style={{ fontSize: 11, color: T.txD }}>{quoteViewerModal.contactName} · {quoteViewerModal.createdAt?.slice(0, 10)}</div>
+              <div style={{ fontSize: 11, color: T.txD }}>{quoteViewerModal.contactName}</div>
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 10 }}>
               <button onClick={async () => {
                 try {
-                  notify(lang === "tr" ? "PDF indiriliyor..." : "PDF wird heruntergeladen...", "info");
+                  notify(lang === "tr" ? "İndiriliyor..." : "Wird heruntergeladen...", "info");
                   const html2pdf = (await import('html2pdf.js')).default;
                   const opt = {
                     margin:       0,
@@ -1752,20 +2045,18 @@ export default function App() {
                     html2canvas:  { scale: 2, useCORS: true },
                     jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
                   };
-                  html2pdf().set(opt).from(quoteViewerModal.htmlQuote).save().then(() => {
-                    notify(lang === "tr" ? "Başarılı" : "Erfolgreich", "success");
-                  });
+                  html2pdf().set(opt).from(quoteViewerModal.htmlQuote).save();
                 } catch (err) {
                   console.error(err);
                   notify("Fehler beim Download", "error");
                 }
-              }} style={{ background: T.acc, color: T.wh, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                <Ic name="download" size={14} color={T.wh} /> {lang === "tr" ? "İndir" : lang === "en" ? "Download" : "Download"}
+              }} style={{ background: T.acc, color: T.wh, border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                <Ic name="download" size={14} color={T.wh} /> <span>{lang === "tr" ? "PDF" : "PDF"}</span>
               </button>
 
               <button onClick={async () => {
                 try {
-                  notify(lang === "tr" ? "PDF hazırlanıyor..." : "PDF wird zum Teilen vorbereitet...", "info");
+                  notify(lang === "tr" ? "Paylaşılıyor..." : "Wird geteilt...", "info");
                   const html2pdf = (await import('html2pdf.js')).default;
                   const opt = {
                     margin:       0,
@@ -1779,26 +2070,35 @@ export default function App() {
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
                       await navigator.share({ title: opt.filename, files: [file] });
                     } else {
-                      notify(lang === "tr" ? "Cihazınız dosya paylaşımını desteklemiyor." : "Dein Gerät unterstützt das direkte Teilen von Dateien nicht.", "warn");
-                      // Standard download fallback
                       const url = URL.createObjectURL(pdfBlob);
-                      const a = document.createElement('a');
-                      a.href = url; a.download = opt.filename; a.click();
+                      const a = document.createElement('a'); a.href = url; a.download = opt.filename; a.click();
                       URL.revokeObjectURL(url);
                     }
                   });
                 } catch (err) {
                   console.error(err);
-                  notify("Fehler beim Teilen", "error");
                 }
-              }} style={{ background: "#25D366", color: T.wh, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                <Ic name="send" size={14} color={T.wh} /> {lang === "tr" ? "Paylaş" : lang === "en" ? "Share" : "Teilen"}
+              }} style={{ background: "#25D366", color: T.wh, border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                <Ic name="send" size={14} color={T.wh} /> <span>{lang === "tr" ? "Paylaş" : "Teilen"}</span>
               </button>
-              <button onClick={() => setQuoteViewerModal(null)} style={{ background: T.bg, border: `1px solid ${T.bd}`, borderRadius: 8, padding: "8px 14px", cursor: "pointer", color: T.txM }}>✕</button>
+              <button onClick={() => setQuoteViewerModal(null)} style={{ background: T.bg, border: `1px solid ${T.bd}`, borderRadius: 8, padding: "10px 14px", cursor: "pointer", color: T.txM }}>✕</button>
             </div>
           </div>
-          <div style={{ flex: 1, overflowY: "auto", background: "#f5f5f5" }}>
-            <iframe srcDoc={quoteViewerModal.htmlQuote} title="Quote Viewer" style={{ width: "100%", height: "100%", border: "none", background: "#fff", display: "block" }} />
+          <div style={{ flex: 1, overflow: "auto", background: "#f0f0f0", display: "flex", justifyContent: "center", paddingTop: 20 }}>
+            <div style={{ 
+              width: "800px", 
+              height: "1131px", 
+              transform: `scale(${Math.min(1, (winWidth - 40) / 800)})`, 
+              transformOrigin: "top center", 
+              boxShadow: "0 10px 40px rgba(0,0,0,0.15)",
+              background: "#fff"
+            }}>
+              <iframe 
+                srcDoc={quoteViewerModal.htmlQuote} 
+                title="Quote Viewer" 
+                style={{ width: "800px", height: "1131px", border: "none", overflow: "hidden" }} 
+              />
+            </div>
           </div>
         </div>
       )}

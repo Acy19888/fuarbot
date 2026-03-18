@@ -168,6 +168,19 @@ const translations = {
     emailWasSentTo: "Hier stand die E-Mail an",
     regarding: "bezüglich",
     emailPreviewHint: "Hinweis: Der genaue HTML-Code dieser E-Mail wurde damals nicht in der Datenbank gespeichert, da diese Funktion erst später hinzugefügt wurde. Ab sofort werden alle neuen E-Mails hier originalgetreu angezeigt!",
+    // Quotes
+    navQuotes: "Angebote",
+    quotes: "Angebote",
+    potentialRevenue: "Pot. Umsatz",
+    sent: "Gesendet",
+    draft: "Entwurf",
+    totalQuotes: "Gesamt",
+    revenue: "Umsatz",
+    noQuotes: "Noch keine Angebote",
+    noQuotesHint: "Geh zu einem Kontakt und erstelle ein KI-Angebot",
+    navChat: "Chat",
+    chatPlaceholder: "Frag mich was... z.B. letztes Angebot von Müller",
+    chatGreeting: "Hallo! Ich kann dir bei Kontakten und Angeboten helfen. Frag mich was!",
   },
 
   tr: {
@@ -326,6 +339,19 @@ const translations = {
     emailWasSentTo: "Bu e-posta şu kişiye gönderildi:",
     regarding: "konusu:",
     emailPreviewHint: "Not: Bu özelliğin daha sonra eklenmesi nedeniyle, bu e-postanın tam HTML kodu o sırada veritabanına kaydedilmedi. Bundan sonra tüm yeni e-postalar burada orijinaline sadık kalınarak gösterilecektir!",
+    // Quotes
+    navQuotes: "Teklifler",
+    quotes: "Teklifler",
+    potentialRevenue: "Pot. Ciro",
+    sent: "Gönderildi",
+    draft: "Taslak",
+    totalQuotes: "Toplam",
+    revenue: "Ciro",
+    noQuotes: "Henüz teklif yok",
+    noQuotesHint: "Bir kişiye gidin ve KI teklifi oluşturun",
+    navChat: "Sohbet",
+    chatPlaceholder: "Bana bir şey sor... ör. Müller'in son teklifi",
+    chatGreeting: "Merhaba! Kişiler ve teklifler konusunda yardımcı olabilirim. Bana bir şey sor!",
   },
 
   en: {
@@ -484,6 +510,19 @@ const translations = {
     emailWasSentTo: "This email was sent to",
     regarding: "regarding",
     emailPreviewHint: "Note: The exact HTML code of this email was not stored in the database at the time, as this feature was added later. From now on, all new emails will be displayed here exactly as they were sent!",
+    // Quotes
+    navQuotes: "Quotes",
+    quotes: "Quotes",
+    potentialRevenue: "Pot. Revenue",
+    sent: "Sent",
+    draft: "Draft",
+    totalQuotes: "Total",
+    revenue: "Revenue",
+    noQuotes: "No quotes yet",
+    noQuotesHint: "Go to a contact and create an AI quote",
+    navChat: "Chat",
+    chatPlaceholder: "Ask me anything... e.g. last quote from Smith",
+    chatGreeting: "Hello! I can help you with contacts and quotes. Ask me anything!",
   },
 };
 
