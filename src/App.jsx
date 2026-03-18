@@ -439,7 +439,13 @@ export default function App() {
       }
     }
 
-    const contactData = { ...enriched, emailSent: false, whatsappSent: false, savedAt: new Date().toISOString() };
+    const contactData = { 
+      ...enriched, 
+      emailSent: false, 
+      whatsappSent: false, 
+      savedAt: new Date().toISOString(),
+      customerAvatar: capturedCustomerPic || current.customerAvatar || null
+    };
 
     // If editing existing contact, update instead of create
     let savedId = editingContact?.id;
@@ -458,23 +464,8 @@ export default function App() {
 
     if (!savedId) return;
 
-    // Upload customer photo if taken AFTER document is created
-    if (capturedCustomerPic) {
-      try {
-        const url = await uploadCustomerAvatarBase64(savedId, capturedCustomerPic);
-        if (url) {
-          contactData.customerAvatar = url;
-          await updateContactInFirebase(savedId, { customerAvatar: url });
-        }
-      } catch (e) {
-        console.error("Avatar upload failed", e);
-      }
-    }
-
-    // CRM Sync (now includes avatar if uploaded)
-    if (savedId) {
-      await syncToCrm(savedId, contactData, user, selectedMesse?.name ? `${selectedMesse.name} ${selectedMesse.city || ""}`.trim() : "");
-    }
+    // CRM Sync
+    await syncToCrm(savedId, contactData, user, selectedMesse?.name ? `${selectedMesse.name} ${selectedMesse.city || ""}`.trim() : "");
 
     if (withContact) {
       if (enriched.email) {
@@ -783,10 +774,14 @@ export default function App() {
                 <button onClick={() => setView("contacts")} style={{ background: "none", border: "none", color: T.acc, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{t("showAll")}</button>
               </div>
               {contacts.slice(0, 4).map((c, i) => (
-                <div key={c.id} style={{ ...S.card, padding: "14px 16px", marginBottom: 8, display: "flex", alignItems: "center", gap: 12, animation: `slideUp .3s ease ${i * .05}s both` }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 11, flexShrink: 0, background: `linear-gradient(135deg,${T.sf2},${T.bd})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: T.acc }}>
-                    {c.name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-                  </div>
+                <div key={c.id} onClick={() => { setSelectedContact(c); setView("contactDetail"); }} style={{ ...S.card, padding: "14px 16px", marginBottom: 8, display: "flex", alignItems: "center", gap: 12, animation: `slideUp .3s ease ${i * .05}s both`, cursor: "pointer" }}>
+                  {c.customerAvatar ? (
+                    <img src={c.customerAvatar} style={{ width: 42, height: 42, borderRadius: 11, objectFit: "cover", objectPosition: "center 15%" }} alt="" />
+                  ) : (
+                    <div style={{ width: 42, height: 42, borderRadius: 11, flexShrink: 0, background: `linear-gradient(135deg,${T.sf2},${T.bd})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: T.acc }}>
+                      {c.name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                    </div>
+                  )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</p>
                     <p style={{ fontSize: 11, color: T.txM, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.company}{c.position ? ` · ${c.position}` : ""}</p>
@@ -851,13 +846,43 @@ export default function App() {
             <input type="file" accept="image/*" capture="environment" id="customerPicCamera" style={{ display: "none" }} onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) {
-                const r = new FileReader(); r.onload = (ev) => setCapturedCustomerPic(ev.target.result); r.readAsDataURL(f);
+                const r = new FileReader();
+                r.onload = (ev) => {
+                  const img = new Image();
+                  img.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = 240; canvas.height = 240;
+                    const ctx = canvas.getContext("2d");
+                    const sSize = Math.min(img.width, img.height);
+                    const sx = (img.width - sSize) / 2;
+                    const sy = (img.height - sSize) / 2;
+                    ctx.drawImage(img, sx, sy, sSize, sSize, 0, 0, 240, 240);
+                    setCapturedCustomerPic(canvas.toDataURL("image/jpeg", 0.7));
+                  };
+                  img.src = ev.target.result;
+                };
+                r.readAsDataURL(f);
               }
             }} />
             <input type="file" accept="image/*" id="customerPicGallery" style={{ display: "none" }} onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) {
-                const r = new FileReader(); r.onload = (ev) => setCapturedCustomerPic(ev.target.result); r.readAsDataURL(f);
+                const r = new FileReader();
+                r.onload = (ev) => {
+                  const img = new Image();
+                  img.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = 240; canvas.height = 240;
+                    const ctx = canvas.getContext("2d");
+                    const sSize = Math.min(img.width, img.height);
+                    const sx = (img.width - sSize) / 2;
+                    const sy = (img.height - sSize) / 2;
+                    ctx.drawImage(img, sx, sy, sSize, sSize, 0, 0, 240, 240);
+                    setCapturedCustomerPic(canvas.toDataURL("image/jpeg", 0.7));
+                  };
+                  img.src = ev.target.result;
+                };
+                r.readAsDataURL(f);
               }
             }} />
 
