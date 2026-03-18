@@ -1109,9 +1109,9 @@ export default function App() {
                 setAngebotRequest("");
                 setQuotePreview(null);
                 setAngebotModal({ contact: c, savedId: c.id });
-              }} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid rgba(43,85,151,0.3)`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "rgba(43,85,151,0.06)" }}>
+              }} style={{ ...S.card, padding: "14px 8px", cursor: "pointer", border: `1px solid ${T.bd}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: T.sf }}>
                 <Ic name="file-text" size={20} color={T.acc} />
-                <span style={{ fontSize: 11, color: T.acc, fontWeight: 700 }}>
+                <span style={{ fontSize: 11, color: T.txM, fontWeight: 600 }}>
                   {lang === "tr" ? "Teklif" : lang === "en" ? "Quote" : "Angebot"}
                 </span>
               </button>
@@ -1136,15 +1136,20 @@ export default function App() {
               {timeline.length === 0 && <p style={{ fontSize: 13, color: T.txD, textAlign: "center", padding: "12px 0" }}>{t("noActivities")}</p>}
               {timeline.map((ev, idx) => {
                 const isEmail = ev.type === "email";
+                const isQuote = ev.type === "quote";
                 const hasHtml = !!ev.htmlBody;
-                const canClick = isEmail;
+                const canClick = isEmail || isQuote;
                 return (
                   <div key={idx} 
                        onClick={() => {
                          if (!canClick) return;
-                         if (hasHtml) {
+                         if (isQuote && ev.quoteId) {
+                           const q = contactQuotes.find(cq => cq.id === ev.quoteId);
+                           if (q) setQuoteViewerModal(q);
+                           else notify(lang === "tr" ? "Teklif yükleniyor..." : "Angebot wird geladen...", "info");
+                         } else if (isEmail && hasHtml) {
                            setViewingEmail(ev.htmlBody);
-                         } else {
+                         } else if (isEmail) {
                            // Fallback for old emails
                            const fallback = `<html><body style="font-family:sans-serif;padding:30px;color:#333;line-height:1.6;max-width:600px;margin:0 auto;">
                              <h2 style="margin-top:0;">${t("emailPreviewUnavailable")}</h2>
@@ -1184,6 +1189,11 @@ export default function App() {
                       {isEmail && (
                         <button style={{ background: "none", border: "none", color: hasHtml ? T.accS : T.txD, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                           <Ic name="mail" size={12} color={hasHtml ? T.accS : T.txD} /> {hasHtml ? t("viewMail") : t("info")}
+                        </button>
+                      )}
+                      {isQuote && (
+                        <button style={{ background: "none", border: "none", color: T.acc, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                          <Ic name="file-text" size={12} color={T.acc} /> {lang === "tr" ? "Aç" : lang === "en" ? "Open" : "Öffnen"}
                         </button>
                       )}
                     </div>
@@ -1615,8 +1625,8 @@ export default function App() {
             {/* Preview + actions */}
             {quotePreview && (
               <>
-                <div style={{ borderRadius: 10, overflow: "hidden", border: `1px solid ${T.bd}`, marginBottom: 14, maxHeight: 320, overflowY: "auto" }}>
-                  <div dangerouslySetInnerHTML={{ __html: quotePreview.htmlQuote }} />
+                <div style={{ borderRadius: 10, overflow: "hidden", border: `1px solid ${T.bd}`, marginBottom: 14, height: 320 }}>
+                  <iframe srcDoc={quotePreview.htmlQuote} title="Quote Preview" style={{ width: "100%", height: "100%", border: "none", background: "#fff" }} />
                 </div>
                 <div style={{ background: T.sf, borderRadius: 10, padding: "12px 16px", marginBottom: 14, display: "flex", justifyContent: "space-between" }}>
                   <div>
@@ -1734,7 +1744,7 @@ export default function App() {
             </div>
           </div>
           <div style={{ flex: 1, overflowY: "auto", background: "#f5f5f5" }}>
-            <div dangerouslySetInnerHTML={{ __html: quoteViewerModal.htmlQuote }} />
+            <iframe srcDoc={quoteViewerModal.htmlQuote} title="Quote Viewer" style={{ width: "100%", height: "100%", border: "none", background: "#fff", display: "block" }} />
           </div>
         </div>
       )}
