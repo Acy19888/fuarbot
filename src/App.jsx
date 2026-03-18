@@ -64,7 +64,7 @@ async function sendEmail(to, contactName, messeName, salesPerson, smtp) {
         smtpUser: smtp.smtpUser, smtpPass: smtp.smtpPass,
         smtpFrom: smtp.smtpFrom || smtp.smtpUser,
         companyName: smtp.companyName, catalogUrl: smtp.catalogUrl,
-        emailSignature: smtp.emailSignature || "",
+        userPhone: smtp.userPhone || "",
         avatar: smtp.avatar || "",
       }),
     });
@@ -1208,17 +1208,9 @@ export default function App() {
             </div>
 
             <div style={{ marginBottom: 20 }}>
-              <label style={S.label}>E-Mail Signatur</label>
-              <textarea
-                value={smtp.emailSignature || ""}
-                onChange={(e) => setSmtp((s) => ({ ...s, emailSignature: e.target.value }))}
-                placeholder={`Freundliche Grüße,\nMax Mustermann\nWindoform GmbH\nTel: +49 123 456789`}
-                rows={5}
-                style={{ ...S.input, resize: "vertical", lineHeight: 1.6 }}
-                onFocus={(e) => e.target.style.borderColor = T.acc}
-                onBlur={(e) => e.target.style.borderColor = T.bd}
-              />
-              <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>Wird automatisch am Ende jeder E-Mail als deine Signatur eingefügt.</p>
+              <label style={S.label}>Deine Telefon-/Mobilnummer (für E-Mail Signatur)</label>
+              <input type="tel" value={smtp.userPhone || ""} onChange={(e) => setSmtp((s) => ({ ...s, userPhone: e.target.value }))} placeholder="+49 123 456789" style={S.input} />
+              <p style={{ fontSize: 11, color: T.txD, marginTop: 4 }}>Wird automatisch in deiner Windoform E-Mail-Signatur hinterlegt.</p>
             </div>
 
             {/* Save + Test buttons */}

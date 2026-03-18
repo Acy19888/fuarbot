@@ -168,23 +168,29 @@ ${t.cta}
 </div>
 <p style="font-size:15px;color:#555;line-height:1.7;margin:0 0 16px;">${t.body3}</p>
 <p style="font-size:15px;color:#555;line-height:1.7;margin:24px 0 0;">${t.closing}</p>
-${(emailSignature || avatar) ? `
-<table style="margin-top:24px;border-top:1px solid #eee;padding-top:20px;width:100%;border-collapse:collapse;">
+<table style="margin-top:24px;border-top:1px solid #ddd;padding-top:20px;width:100%;border-collapse:collapse;">
   <tr>
-    ${avatar ? `<td style="width:70px;vertical-align:top;padding:0;"><img src="${avatar}" style="width:60px;height:60px;border-radius:50%;display:block;margin-right:12px;" alt="" /></td>` : ""}
+    <td colspan="2" style="padding-bottom: 12px;padding-left:0;padding-right:0;">
+      <p style="margin:0;font-size:15px;font-weight:700;color:#2B5597;letter-spacing:0.5px;">WİNDOFORM PVC KAPI VE PENCERE AKSESUARLARI</p>
+    </td>
+  </tr>
+  <tr>
+    ${avatar ? `<td style="width:75px;vertical-align:top;padding:0;"><img src="${avatar}" style="width:64px;height:64px;border-radius:50%;display:block;margin-right:16px;" alt="" /></td>` : ""}
     <td style="vertical-align:top;padding:0;">
-      ${!emailSignature ? `
-      <p style="margin:0;font-size:15px;font-weight:600;color:#333;">${salesPerson || "—"}</p>
-      <p style="margin:2px 0 0;font-size:13px;color:#888;">${company}</p>
-      ` : ""}
-      ${emailSignature ? `<div style="font-size:13px;color:#777;line-height:1.6;white-space:pre-line;">${emailSignature}</div>` : ""}
+      <p style="margin:0;font-size:14px;font-weight:600;color:#555;">Mit freundlichem Gruß,</p>
+      <p style="margin:4px 0 0;font-size:16px;font-weight:700;color:#222;">${salesPerson || "—"}</p>
+      <p style="margin:8px 0 0;font-size:13px;color:#666;line-height:1.5;">
+        <strong style="color:#2B5597;">E:</strong> <a href="mailto:${fromAddr}" style="color:#2B5597;text-decoration:none;">${fromAddr}</a><br/>
+        ${userPhone ? `<strong style="color:#2B5597;">T:</strong> ${userPhone}<br/>` : ""}
+      </p>
+      <p style="margin:12px 0 0;font-size:12px;color:#888;line-height:1.5;">
+        Kazım Karabekir Mh. Bekir Saydam Cd.<br/>
+        No:104 A-10 Blok No:7-8<br/>
+        Pancar Torbalı / İZMİR
+      </p>
     </td>
   </tr>
 </table>
-` : `
-<p style="font-size:16px;color:#333;font-weight:600;margin:8px 0 0;">${salesPerson || "—"}</p>
-<p style="font-size:14px;color:#888;margin:4px 0 0;">${company}</p>
-`}
 </div>
 <div style="background:#f8f8f8;padding:20px 40px;border-top:1px solid #eee;">
 <p style="font-size:12px;color:#999;margin:0;text-align:center;">${t.footer}</p>
