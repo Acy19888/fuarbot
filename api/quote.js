@@ -659,17 +659,24 @@ Return JSON:
     const product = lines[0]?.product || userRequest.slice(0, 60);
     const subject = parsed.subject || `Angebot ${quoteNumber} – ${product}`;
 
-    // Send email if requested — PDF as attachment, short text body
-    let emailSent = false;
-    if (sendEmail && smtpHost && smtpUser && smtpPass && contact.email) {
-      try {
-        // Generate A4 PDF for attachment
-        const pdfBuffer = await buildPdfQuote({
-          quoteNumber, date, company, salesPerson: salesPerson || company,
-          userPhone: userPhone || "", contact, lines: enhancedLines,
-          totalNet, currency, notes: parsed.notes || "", lang: lang || "de"
-        });
+    // Always generate the PDF (needed for CRM preview + email attachment)
+    let pdfBuffer = null;
+    let pdfBase64 = null;
+    try {
+      pdfBuffer = await buildPdfQuote({
+        quoteNumber, date, company, salesPerson: salesPerson || company,
+        userPhone: userPhone || "", contact, lines: enhancedLines,
+        totalNet, currency, notes: parsed.notes || "", lang: lang || "de"
+      });
+      pdfBase64 = pdfBuffer.toString("base64");
+    } catch (pdfErr) {
+      console.error("PDF generation error:", pdfErr.message);
+    }
 
+    // Send email if requested
+    let emailSent = false;
+    if (sendEmail && smtpHost && smtpUser && smtpPass && contact.email && pdfBuffer) {
+      try {
         const emailBody = buildEmailBody({
           company, salesPerson: salesPerson || company,
           quoteNumber, lang: lang || "de"
@@ -706,7 +713,8 @@ Return JSON:
       ralCode: parsed.ralCode || null,
       ralColorName: parsed.ralColorName || null,
       htmlQuote, subject, lines: enhancedLines,
-      notes: parsed.notes || ""
+      notes: parsed.notes || "",
+      pdfBase64   // included so App.jsx can save it to crm_quotes
     });
 
   } catch (error) {

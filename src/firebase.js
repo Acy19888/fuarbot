@@ -193,6 +193,8 @@ export async function syncQuoteToCrm(contactId, quoteData, contactData) {
       contactEmail:   contactData?.email       || "",
       contactPhone:   contactData?.phone || contactData?.mobile || "",
       contactAddress: contactData?.address     || "",
+      // Exact PDF binary as base64 — identical to the email attachment
+      ...(quoteData.pdfBase64 ? { pdfBase64: quoteData.pdfBase64 } : {}),
     }, { merge: true });
   } catch (err) {
     console.error("CRM quote sync error:", err);
