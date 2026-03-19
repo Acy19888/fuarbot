@@ -176,6 +176,21 @@ export async function syncQuoteToCrm(contactId, quoteData, contactData) {
   try {
     const { setDoc } = await import("firebase/firestore");
     const docId = quoteData.quoteNumber || `${contactId}_${Date.now()}`;
+
+    // Upload PDF to Firebase Storage (small URL in Firestore, not the binary)
+    let pdfUrl = quoteData.pdfUrl || null;
+    if (!pdfUrl && quoteData.pdfBase64 && app) {
+      try {
+        const { getStorage, ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
+        const bytes = Uint8Array.from(atob(quoteData.pdfBase64), c => c.charCodeAt(0));
+        const sRef = ref(getStorage(app), `crm_quotes/${docId}.pdf`);
+        await uploadBytes(sRef, bytes, { contentType: "application/pdf" });
+        pdfUrl = await getDownloadURL(sRef);
+      } catch (storageErr) {
+        console.warn("PDF storage upload failed:", storageErr.message);
+      }
+    }
+
     await setDoc(doc(db, "crm_quotes", docId), {
       contactId,
       quoteNumber:    quoteData.quoteNumber    || "",
@@ -193,8 +208,8 @@ export async function syncQuoteToCrm(contactId, quoteData, contactData) {
       contactEmail:   contactData?.email       || "",
       contactPhone:   contactData?.phone || contactData?.mobile || "",
       contactAddress: contactData?.address     || "",
-      // Exact PDF binary as base64 — identical to the email attachment
-      ...(quoteData.pdfBase64 ? { pdfBase64: quoteData.pdfBase64 } : {}),
+      // PDF download URL (from Firebase Storage — no quota issues)
+      ...(pdfUrl ? { pdfUrl } : {}),
     }, { merge: true });
   } catch (err) {
     console.error("CRM quote sync error:", err);
