@@ -474,10 +474,16 @@ export default function App() {
     const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
     const mType = dataUrl.match(/^data:(image\/\w+);/)?.[1] || mediaType;
     let contact = await scanCard(base64, mType);
-    if (contact) { setDemoMode(false); notify(t("recognized")); }
-    else { setDemoMode(true); await new Promise((r) => setTimeout(r, 1500)); contact = demoContact(); notify(t("demoMode"), "warn"); }
-    setCurrent({ ...contact, scannedBy: user?.displayName || user?.email || "?", scannedAt: new Date().toISOString(), messe: selectedMesse?.name + " " + selectedMesse?.city, messeId: selectedMesse?.id, userId: user?.uid, emailSent: false, notes: "" });
-    setScanning(false); setView("review");
+    if (contact) {
+      setDemoMode(false);
+      notify(t("recognized"));
+      setCurrent({ ...contact, scannedBy: user?.displayName || user?.email || "?", scannedAt: new Date().toISOString(), messe: selectedMesse?.name + " " + selectedMesse?.city, messeId: selectedMesse?.id, userId: user?.uid, emailSent: false, notes: "" });
+      setScanning(false); setView("review");
+    } else {
+      // Karte nicht erkannt — kein Demo-Kontakt erfinden, Fehlermeldung zeigen
+      setScanning(false);
+      notify("Kart okunamadı. Lütfen tekrar deneyin veya daha iyi ışıkta çekin.", "warn");
+    }
   };
 
   // ---- DUPLICATE CHECK ----
