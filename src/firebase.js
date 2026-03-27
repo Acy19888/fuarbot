@@ -145,6 +145,7 @@ export async function syncToCrm(contactId, contactData, user, messeName) {
       source: messeName ? `Fuarbot: ${messeName}` : "Fuarbot",
       status: "new",
       customerAvatar: contactData.customerAvatar || null,
+      scannedBy: contactData.scannedBy || user?.displayName || user?.email || "",
       updatedAt: new Date().toISOString()
     };
     await setDoc(doc(db, "crm_customers", contactId), crmData, { merge: true });
